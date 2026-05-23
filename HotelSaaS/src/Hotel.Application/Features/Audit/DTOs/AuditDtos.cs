@@ -1,0 +1,2 @@
+namespace Hotel.Application.Features.Audit.DTOs;
+public record AuditLogDto(string Id, string? HotelId, string? UserId, string? UserEmail, string Action, string EntityType, string? EntityId, string? OldValues, string? NewValues, string? IpAddress, string? CorrelationId, string? TraceId, bool Success, string? ErrorMessage, DateTime CreatedAt);

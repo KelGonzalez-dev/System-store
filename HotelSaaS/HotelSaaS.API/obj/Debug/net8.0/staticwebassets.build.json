@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "zOTnfiGJ5i2EupQ0rd2Ve8NFXugz43nubWU+nf1ECgQ=",
+  "Source": "HotelSaaS.API",
+  "BasePath": "_content/HotelSaaS.API",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

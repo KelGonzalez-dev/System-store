@@ -1,0 +1,10 @@
+using Hotel.Domain.Enums;
+namespace Hotel.Application.Features.Reservations.DTOs;
+public record CreateReservationRequest(string HotelId, string RoomId, string GuestId, DateOnly CheckInDate, DateOnly CheckOutDate, int Adults, int Children, decimal BaseAmount, decimal TaxAmount, decimal TotalAmount, string Currency, string? Source, string? SpecialRequests, string? Notes);
+public record UpdateReservationRequest(string? SpecialRequests, string? Notes);
+public record CancelReservationRequest(string Reason);
+public record CheckInRequest(string? Notes);
+public record CheckOutRequest(string? Notes);
+public record ReservationDto(string Id, string HotelId, string RoomId, string RoomNumber, string GuestId, string GuestName, string GuestEmail, string ConfirmationNumber, DateOnly CheckInDate, DateOnly CheckOutDate, int Adults, int Children, string Status, decimal BaseAmount, decimal TaxAmount, decimal TotalAmount, decimal PaidAmount, string Currency, string? Source, string? SpecialRequests, string? Notes, DateTime? ActualCheckIn, DateTime? ActualCheckOut, DateTime CreatedAt, DateTime UpdatedAt);
+public record AvailabilityRequest(string HotelId, DateOnly CheckInDate, DateOnly CheckOutDate, int Adults = 1, string? RoomTypeId = null);
+public record AvailabilityResponse(string RoomId, string RoomNumber, string RoomTypeName, int Floor, int MaxOccupancy, decimal BasePrice, List<string> Amenities);
