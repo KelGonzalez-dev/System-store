@@ -1,0 +1,85 @@
+version: "3.9"
+
+services:
+  # ─── PostgreSQL ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: hotel_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hotel_saas
+      POSTGRES_USER: hotel_user
+      POSTGRES_PASSWORD: hotel_secure_pass_2024
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/db:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hotel_user -d hotel_saas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hotel_network
+
+  # ─── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: hotel_redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass redis_secure_pass
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis_secure_pass", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hotel_network
+
+  # ─── API ────────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hotel_api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=hotel_saas;Username=hotel_user;Password=hotel_secure_pass_2024"
+      ConnectionStrings__Redis: "redis:6379,password=redis_secure_pass"
+      Jwt__Secret: "DOCKER_SECRET_KEY_CHANGE_IN_PRODUCTION_32_CHARS_MIN!!"
+      Jwt__Issuer: "HotelSaaS.Api"
+      Jwt__Audience: "HotelSaaS.Client"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - hotel_network
+    volumes:
+      - api_logs:/app/logs
+
+volumes:
+  postgres_data:
+  redis_data:
+  api_logs:
+
+networks:
+  hotel_network:
+    driver: bridge

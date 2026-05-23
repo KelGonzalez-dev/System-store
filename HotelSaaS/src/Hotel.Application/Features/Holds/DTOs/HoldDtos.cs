@@ -1,0 +1,4 @@
+namespace Hotel.Application.Features.Holds.DTOs;
+public record CreateHoldRequest(string HotelId, string RoomId, string? GuestId, DateOnly CheckInDate, DateOnly CheckOutDate, int ExpiryMinutes = 30, string? Notes = null);
+public record ConvertHoldToReservationRequest(string GuestId, int Adults, int Children, decimal BaseAmount, decimal TaxAmount, decimal TotalAmount, string Currency, string? Source, string? SpecialRequests);
+public record HoldDto(string Id, string HotelId, string RoomId, string RoomNumber, string? GuestId, string? UserId, DateOnly CheckInDate, DateOnly CheckOutDate, string Status, DateTime ExpiresAt, bool IsExpired, string? Notes, string? ReservationId, DateTime CreatedAt);

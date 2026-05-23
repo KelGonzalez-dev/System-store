@@ -1,0 +1,5 @@
+using Hotel.Domain.Enums;
+namespace Hotel.Application.Features.Guests.DTOs;
+public record CreateGuestRequest(string HotelId, string FirstName, string LastName, string Email, string? Phone, string? CountryCode, DocumentType DocumentType, string? DocumentNumber, DateOnly? DateOfBirth, string? Nationality, string? Address, string? City, string? Notes, bool MarketingOptIn = false);
+public record UpdateGuestRequest(string? FirstName, string? LastName, string? Email, string? Phone, string? CountryCode, DocumentType? DocumentType, string? DocumentNumber, DateOnly? DateOfBirth, string? Nationality, string? Address, string? City, string? Notes, bool? MarketingOptIn);
+public record GuestDto(string Id, string HotelId, string FirstName, string LastName, string FullName, string Email, string? Phone, string? CountryCode, string DocumentType, string? DocumentNumber, DateOnly? DateOfBirth, string? Nationality, string? Address, string? City, string? Notes, string Status, int TotalStays, decimal TotalSpent, string? LoyaltyLevel, bool MarketingOptIn, DateTime CreatedAt, DateTime UpdatedAt);
