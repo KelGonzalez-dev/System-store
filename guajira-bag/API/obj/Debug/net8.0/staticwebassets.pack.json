@@ -1,0 +1,25 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\System-store\\guajira-bag\\api\\wwwroot\\uploads\\galeria\\b3f51e90-5f0c-4f6f-bad4-046459287f27.jpg",
+      "PackagePath": "staticwebassets\\uploads\\galeria\\b3f51e90-5f0c-4f6f-bad4-046459287f27.jpg"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.GuajiraBags.Api.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.GuajiraBags.Api.props",
+      "PackagePath": "build\\GuajiraBags.Api.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.GuajiraBags.Api.props",
+      "PackagePath": "buildMultiTargeting\\GuajiraBags.Api.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.GuajiraBags.Api.props",
+      "PackagePath": "buildTransitive\\GuajiraBags.Api.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

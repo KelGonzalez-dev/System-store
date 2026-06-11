@@ -1,0 +1,39 @@
+{
+  "Version": 1,
+  "Hash": "UxkPx9aemY5kg1QUvSC+Mjs+/RgRNqYY0OLM+dk1cR0=",
+  "Source": "GuajiraBags.Api",
+  "BasePath": "_content/GuajiraBags.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "GuajiraBags.Api\\wwwroot",
+      "Source": "GuajiraBags.Api",
+      "ContentRoot": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\System-store\\guajira-bag\\api\\wwwroot\\",
+      "BasePath": "_content/GuajiraBags.Api",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\System-store\\guajira-bag\\api\\wwwroot\\uploads\\galeria\\b3f51e90-5f0c-4f6f-bad4-046459287f27.jpg",
+      "SourceId": "GuajiraBags.Api",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\System-store\\guajira-bag\\api\\wwwroot\\",
+      "BasePath": "_content/GuajiraBags.Api",
+      "RelativePath": "uploads/galeria/b3f51e90-5f0c-4f6f-bad4-046459287f27.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\galeria\\b3f51e90-5f0c-4f6f-bad4-046459287f27.jpg"
+    }
+  ]
+}

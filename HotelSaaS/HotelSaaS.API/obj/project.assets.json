@@ -3807,11 +3807,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\sistemas\\HotelSaaS\\HotelSaaS.API\\HotelSaaS.API.csproj",
+      "projectUniqueName": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\System-store\\HotelSaaS\\hotelsaas.api\\HotelSaaS.API.csproj",
       "projectName": "HotelSaaS.API",
-      "projectPath": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\sistemas\\HotelSaaS\\HotelSaaS.API\\HotelSaaS.API.csproj",
+      "projectPath": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\System-store\\HotelSaaS\\hotelsaas.api\\HotelSaaS.API.csproj",
       "packagesPath": "C:\\Users\\KelGonzalez\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\sistemas\\HotelSaaS\\HotelSaaS.API\\obj\\",
+      "outputPath": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\System-store\\HotelSaaS\\hotelsaas.api\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\KelGonzalez\\AppData\\Roaming\\NuGet\\NuGet.Config"
