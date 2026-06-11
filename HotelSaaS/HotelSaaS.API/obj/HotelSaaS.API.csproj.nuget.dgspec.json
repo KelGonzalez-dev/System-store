@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\sistemas\\HotelSaaS\\hotelsaas.api\\HotelSaaS.API.csproj": {}
+    "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\System-store\\HotelSaaS\\hotelsaas.api\\HotelSaaS.API.csproj": {}
   },
   "projects": {
-    "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\sistemas\\HotelSaaS\\hotelsaas.api\\HotelSaaS.API.csproj": {
+    "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\System-store\\HotelSaaS\\hotelsaas.api\\HotelSaaS.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\sistemas\\HotelSaaS\\hotelsaas.api\\HotelSaaS.API.csproj",
+        "projectUniqueName": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\System-store\\HotelSaaS\\hotelsaas.api\\HotelSaaS.API.csproj",
         "projectName": "HotelSaaS.API",
-        "projectPath": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\sistemas\\HotelSaaS\\hotelsaas.api\\HotelSaaS.API.csproj",
+        "projectPath": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\System-store\\HotelSaaS\\hotelsaas.api\\HotelSaaS.API.csproj",
         "packagesPath": "C:\\Users\\KelGonzalez\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\sistemas\\HotelSaaS\\hotelsaas.api\\obj\\",
+        "outputPath": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\System-store\\HotelSaaS\\hotelsaas.api\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\KelGonzalez\\AppData\\Roaming\\NuGet\\NuGet.Config"

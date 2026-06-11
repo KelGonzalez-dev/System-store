@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "ixqBFx/OSOA=",
+  "dgSpecHash": "k+w/E2fMT+E=",
   "success": true,
-  "projectFilePath": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\sistemas\\HotelSaaS\\hotelsaas.api\\HotelSaaS.API.csproj",
+  "projectFilePath": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\System-store\\HotelSaaS\\hotelsaas.api\\HotelSaaS.API.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\KelGonzalez\\.nuget\\packages\\automapper\\12.0.1\\automapper.12.0.1.nupkg.sha512",
     "C:\\Users\\KelGonzalez\\.nuget\\packages\\automapper.extensions.microsoft.dependencyinjection\\12.0.1\\automapper.extensions.microsoft.dependencyinjection.12.0.1.nupkg.sha512",
