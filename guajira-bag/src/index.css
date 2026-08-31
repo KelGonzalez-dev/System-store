@@ -567,7 +567,67 @@ body {
 .lightbox-nav--left { left: 18px; top: 50%; transform: translateY(-50%); }
 .lightbox-nav--right { right: 18px; top: 50%; transform: translateY(-50%); }
 
+/* ── Mochilas flotantes del Hero ─────────────────────────────
+   Antes tenían un ancho fijo de 240px vía inline style, lo que en
+   pantallas de celular tapaba el título y el texto. Ahora escalan
+   con el viewport y en móvil se achican y se corren a las esquinas. */
+.hero-float-bag {
+  position: absolute;
+  z-index: 2;
+  width: clamp(90px, 17vw, 240px);
+  border-radius: 26px;
+}
+.hero-float-bag--a {
+  top: 15%;
+  left: 5%;
+  box-shadow: 0 46px 120px rgba(0,0,0,0.20);
+}
+.hero-float-bag--b {
+  top: 55%;
+  right: 5%;
+  box-shadow: 0 40px 110px rgba(0,0,0,0.18);
+}
+
 @media (max-width: 900px) {
   .hero-stats { grid-template-columns: repeat(3, minmax(100px, 1fr)); gap: 18px; }
   .gallery-card--1, .gallery-card--2, .gallery-card--3, .gallery-card--4, .gallery-card--5, .gallery-card--6 { grid-column: span 12; }
+}
+
+/* ── Optimización móvil ──────────────────────────────────────
+   En celulares: 1) las mochilas flotantes se achican mucho más y
+   se corren para no tapar el texto, 2) los "hero-dots" se reducen,
+   3) se apagan las animaciones de fondo más pesadas (glow-warm anima
+   varios radial-gradient en bucle infinito, lo cual es costoso de
+   repintar en GPUs de gama media/baja y es la causa principal del
+   "lag" al hacer scroll en teléfonos). Esto no elimina los elementos
+   decorativos, solo los deja estáticos y más pequeños en móvil. */
+@media (max-width: 640px) {
+  .hero-float-bag {
+    width: 64px;
+    opacity: 0.6;
+    border-radius: 16px;
+  }
+  .hero-float-bag--a { top: 6%; left: 3%; }
+  .hero-float-bag--b { top: auto; bottom: 6%; right: 3%; }
+
+  .hero-dots { width: 70px; height: 70px; }
+
+  .hero-section,
+  .catalog-section,
+  .contact-section,
+  .gallery-section,
+  .section-rich::before,
+  .product-card::before,
+  .gallery-card::before {
+    animation: none !important;
+  }
+}
+
+/* Respeta la preferencia del sistema operativo de reducir movimiento */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }

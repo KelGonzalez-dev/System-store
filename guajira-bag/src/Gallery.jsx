@@ -2,12 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { getGaleria } from './api';
-
-const API_BASE = 'http://localhost:5000';
+import { toMediaUrl } from './config';
 
 function toUrl(url) {
-  if (!url) return '';
-  return url.startsWith('http') ? url : `${API_BASE}${url}`;
+  return toMediaUrl(url) || '';
 }
 
 export default function Gallery() {

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GuajiraBags.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c954e2876125cc99b3d0ea86da6177446339a5bf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3fd1af8b844685b0bfa722371f104052c43d5341")]
 [assembly: System.Reflection.AssemblyProductAttribute("GuajiraBags.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GuajiraBags.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

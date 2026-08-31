@@ -3,25 +3,20 @@ import { ShoppingCart, X, Search, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { WA_NUMBER, fmt } from './data';
 import { getProductos } from './api';
-
-const API_BASE = 'http://localhost:5000';
+import { toMediaUrl } from './config';
 
 // ─── Adaptar producto de la API al formato que usa la UI ─────
 function adaptProduct(p) {
-  const toUrl = (url) => {
-    if (!url) return null;
-    return url.startsWith('http') ? url : `${API_BASE}${url}`;
-  };
   return {
     id:      p.id,
     name:    p.nombre,
     desc:    p.descripcion,
     details: p.descripcionLarga || p.descripcion,
     price:   Number(p.precio),
-    image:   toUrl(p.imagenUrl) || '/images/bags/placeholder.jpg',
+    image:   toMediaUrl(p.imagenUrl) || '/images/bags/placeholder.jpg',
     images:  p.imagenes?.length
-               ? p.imagenes.map(toUrl)
-               : [toUrl(p.imagenUrl) || '/images/bags/placeholder.jpg'],
+               ? p.imagenes.map(toMediaUrl)
+               : [toMediaUrl(p.imagenUrl) || '/images/bags/placeholder.jpg'],
   };
 }
 
@@ -167,9 +162,25 @@ function ProductModal({ product, onClose, onAdd }) {
 
 // ─── FLOATING PARTICLES ────────────────────────────────────────────────────
 function FloatingParticles() {
+  // Este fondo es "position:fixed" con varios elementos animando infinitamente,
+  // lo cual el navegador debe recalcular en cada frame de scroll. En celulares
+  // se reduce bastante la cantidad de partículas para aliviar la carga.
+  const [count, setCount] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches ? 4 : 12
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)');
+    const onChange = () => setCount(mq.matches ? 4 : 12);
+    mq.addEventListener ? mq.addEventListener('change', onChange) : mq.addListener(onChange);
+    return () => {
+      mq.removeEventListener ? mq.removeEventListener('change', onChange) : mq.removeListener(onChange);
+    };
+  }, []);
+
   return (
     <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0, overflow:"hidden" }}>
-      {Array.from({ length: 12 }, (_, i) => (
+      {Array.from({ length: count }, (_, i) => (
         <div key={i} style={{ position:"absolute", left:`${Math.random()*100}%`, top:`${Math.random()*100}%`, width:Math.random()*4+1, height:Math.random()*4+1, borderRadius:"50%", background:`rgba(184,134,46,${Math.random()*0.4+0.1})`, animation:`float-particle ${Math.random()*6+6}s ease-in-out infinite`, animationDelay:`${Math.random()*5}s` }} />
       ))}
     </div>

@@ -18,6 +18,12 @@
 .env.test.local
 .env.production.local
 
+# PHP API — credenciales locales
+php-api/config/config.local.php
+php-api/public/uploads/productos/*
+php-api/public/uploads/galeria/*
+!php-api/public/uploads/**/.gitkeep
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

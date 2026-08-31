@@ -1,0 +1,20 @@
+<?php
+/**
+ * Copia este archivo como config.local.php y ajusta tus credenciales.
+ */
+return [
+    'db' => [
+        'host'     => 'localhost',
+        'database' => 'guajira_bags',
+        'username' => 'root',
+        'password' => '',
+    ],
+    'jwt' => [
+        'key' => 'cambia-esta-clave-en-produccion',
+    ],
+    'cors' => [
+        'allowed_origins' => [
+            'https://tudominio.com',
+        ],
+    ],
+];

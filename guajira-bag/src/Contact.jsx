@@ -13,18 +13,33 @@ function FloatingOrbs() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let raf;
+    let lastFrame = 0;
+
+    // En móvil se reduce drásticamente el trabajo: menos orbes, menor
+    // resolución de canvas y menos fps. Este bucle de rAF redibujando
+    // gradientes radiales sin límite era la causa principal de que la
+    // página se sintiera "trabada" al hacer scroll en teléfonos.
+    const isMobile = window.matchMedia('(max-width: 640px)').matches;
+    const orbCount = isMobile ? 6 : 18;
+    const targetFps = isMobile ? 24 : 60;
+    const frameInterval = 1000 / targetFps;
+    const dpr = isMobile ? 1 : Math.min(window.devicePixelRatio || 1, 2);
 
     const resize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
     window.addEventListener('resize', resize);
 
+    const w = () => canvas.width / dpr;
+    const h = () => canvas.height / dpr;
+
     // Orbs config
-    const orbs = Array.from({ length: 18 }, (_, i) => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
+    const orbs = Array.from({ length: orbCount }, () => ({
+      x: Math.random() * w(),
+      y: Math.random() * h(),
       r: 40 + Math.random() * 120,
       dx: (Math.random() - 0.5) * 0.4,
       dy: (Math.random() - 0.5) * 0.4,
@@ -32,8 +47,13 @@ function FloatingOrbs() {
       hue: Math.random() > 0.5 ? 40 : 35, // gold range
     }));
 
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const draw = (now) => {
+      raf = requestAnimationFrame(draw);
+      if (document.hidden) return; // no gastar batería/CPU en pestañas ocultas
+      if (now - lastFrame < frameInterval) return;
+      lastFrame = now;
+
+      ctx.clearRect(0, 0, w(), h());
       orbs.forEach(o => {
         const grad = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
         grad.addColorStop(0, `hsla(${o.hue}, 72%, 48%, ${o.opacity})`);
@@ -45,14 +65,13 @@ function FloatingOrbs() {
 
         o.x += o.dx;
         o.y += o.dy;
-        if (o.x < -o.r) o.x = canvas.width + o.r;
-        if (o.x > canvas.width + o.r) o.x = -o.r;
-        if (o.y < -o.r) o.y = canvas.height + o.r;
-        if (o.y > canvas.height + o.r) o.y = -o.r;
+        if (o.x < -o.r) o.x = w() + o.r;
+        if (o.x > w() + o.r) o.x = -o.r;
+        if (o.y < -o.r) o.y = h() + o.r;
+        if (o.y > h() + o.r) o.y = -o.r;
       });
-      raf = requestAnimationFrame(draw);
     };
-    draw();
+    raf = requestAnimationFrame(draw);
 
     return () => {
       cancelAnimationFrame(raf);
