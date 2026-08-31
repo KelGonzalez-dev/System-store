@@ -126,9 +126,11 @@ function Hero({ onNavigate }) {
         </div>
       </div>
       <motion.img src="/images/mochila1.png" alt="" drag={false} initial={{ opacity:0, scale:0.94 }} animate={{ opacity:1 }} transition={{ duration:1.1, ease:"easeOut" }}
-        style={{ position:"absolute", top:"15%", left:"5%", width:240, zIndex:2, pointerEvents:"none", x:xA, y:yA, rotate:rotA, boxShadow:"0 46px 120px rgba(0,0,0,0.20)", borderRadius:26 }} />
+        className="hero-float-bag hero-float-bag--a"
+        style={{ pointerEvents:"none", x:xA, y:yA, rotate:rotA }} />
       <motion.img src="/images/mochila2.png" alt="" drag={false} initial={{ opacity:0, scale:0.94 }} animate={{ opacity:1 }} transition={{ duration:1.2, ease:"easeOut" }}
-        style={{ position:"absolute", top:"55%", right:"5%", width:240, zIndex:2, pointerEvents:"none", x:xB, y:yB, rotate:rotB, boxShadow:"0 40px 110px rgba(0,0,0,0.18)", borderRadius:26 }} />
+        className="hero-float-bag hero-float-bag--b"
+        style={{ pointerEvents:"none", x:xB, y:yB, rotate:rotB }} />
     </section>
   );
 }

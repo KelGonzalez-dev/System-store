@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "wz5tsNS8uRc=",
+  "dgSpecHash": "w3020eAZbH8=",
   "success": true,
-  "projectFilePath": "C:\\Users\\KelGonzalez\\Documents\\Kelmer\\System-store\\guajira-bag\\api\\GuajiraBags.Api.csproj",
+  "projectFilePath": "C:\\Users\\KelGonzalez\\Documents\\kelmer\\System-store\\guajira-bag\\API\\GuajiraBags.Api.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\KelGonzalez\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\KelGonzalez\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",

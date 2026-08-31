@@ -8,27 +8,54 @@
 npm install
 ```
 
-### 2️⃣ INICIAR EN DESARROLLO
+### 2️⃣ CONFIGURAR LA API PHP
+
+1. Crea la base de datos MySQL ejecutando `php-api/database/schema.sql`
+2. Copia `php-api/config/config.local.php.example` → `php-api/config/config.local.php` y pon tus credenciales
+3. Genera el hash del admin:
+   ```bash
+   php php-api/scripts/setup-admin.php
+   ```
+4. Inicia la API:
+   ```bash
+   cd php-api/public
+   php -S localhost:8080
+   ```
+
+La API corre en `http://localhost:8080/api`
+
+### 3️⃣ INICIAR EL FRONTEND
 
 ```bash
+npm install
 npm start
 ```
 
 Se abrirá `http://localhost:3000` automáticamente.
 
-### 3️⃣ PRIMEROS PASOS
+El frontend lee la URL de la API desde `.env`:
+```
+REACT_APP_API_URL=http://localhost:8080
+```
 
-#### A. Ver el catálogo completo
-- La app está lista con 15 mochilas de ejemplo
-- Categorías: Wayuu, Kankuama, Mini Bags, Contemporáneas, Premium
+### 4️⃣ PRIMEROS PASOS
 
-#### B. Probar el carrito
+#### A. Acceder al panel admin
+- Usuario: `admin`
+- Contraseña: `Admin123!` (después de ejecutar setup-admin.php)
+- Haz clic en el ícono de admin en la barra de navegación
+
+#### B. Ver el catálogo
+- Los productos se cargan desde la API MySQL
+- Agrega productos desde el panel admin
+
+#### C. Probar el carrito
 1. Haz clic en "Ver Catálogo"
 2. Busca un producto
 3. Haz clic en "+ Agregar al carrito"
 4. Se abre automáticamente el carrito en la esquina inferior derecha
 
-#### C. Hacer un pedido de prueba
+#### D. Hacer un pedido de prueba
 1. Agrega productos al carrito
 2. Haz clic en "Realizar Pedido"
 3. Completa nombre y ciudad

@@ -2,18 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Pencil, Trash2, X, LogOut, Package, Image, Check, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  getProductos, createProducto, updateProducto, deleteProducto,
+  getProductos, createProducto, updateProducto, deleteProducto, addProductoImagen,
   getGaleria, createGaleriaItem, updateGaleriaItem, deleteGaleriaItem
 } from './api';
-
-const API_BASE = 'http://localhost:5000';
+import { toMediaUrl } from './config';
 
 // ── Helpers ──────────────────────────────────────────────────
 
 function imgSrc(url) {
-  if (!url) return null;
-  if (url.startsWith('http')) return url;
-  return `${API_BASE}${url}`;
+  return toMediaUrl(url);
 }
 
 function Toast({ msg, type }) {
@@ -77,9 +74,16 @@ function ProductoModal({ producto, onClose, onSaved }) {
   const [precio, setPrecio] = useState(producto?.precio ?? '');
   const [imagen, setImagen] = useState(null);
   const [preview, setPreview] = useState(producto?.imagenUrl ? imgSrc(producto.imagenUrl) : null);
+  // Fotos adicionales (galería del producto) — se pueden seleccionar varias a la vez
+  const [extraFotos, setExtraFotos] = useState([]); // [{ file, preview }]
+  const [existentes] = useState(
+    Array.isArray(producto?.imagenes) ? producto.imagenes : []
+  );
   const [loading, setLoading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState('');
   const [error, setError] = useState('');
   const fileRef = useRef();
+  const extraFileRef = useRef();
 
   const esEdicion = !!producto;
 
@@ -88,6 +92,18 @@ function ProductoModal({ producto, onClose, onSaved }) {
     if (!f) return;
     setImagen(f);
     setPreview(URL.createObjectURL(f));
+  };
+
+  const handleExtraFiles = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const nuevas = files.map(file => ({ file, preview: URL.createObjectURL(file) }));
+    setExtraFotos(prev => [...prev, ...nuevas]);
+    e.target.value = ''; // permite volver a elegir el mismo archivo si se quita
+  };
+
+  const quitarExtraFoto = (idx) => {
+    setExtraFotos(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleSubmit = async (e) => {
@@ -104,19 +120,35 @@ function ProductoModal({ producto, onClose, onSaved }) {
       form.append('descripcion', descripcion);
       if (descripcionLarga) form.append('descripcionLarga', descripcionLarga);
       form.append('precio', precio);
-      if (imagen) form.append('imagen', imagen);
+      if (imagen) {
+        form.append(esEdicion ? 'nuevaImagen' : 'imagen', imagen);
+      }
 
+      let productoId = producto?.id;
       if (esEdicion) {
         await updateProducto(producto.id, form);
       } else {
-        await createProducto(form);
+        const creado = await createProducto(form);
+        productoId = creado?.id ?? creado?.producto?.id;
       }
+
+      // Subir fotos adicionales una por una (si se seleccionaron)
+      if (productoId && extraFotos.length) {
+        for (let i = 0; i < extraFotos.length; i++) {
+          setUploadMsg(`Subiendo foto ${i + 1} de ${extraFotos.length}...`);
+          const fd = new FormData();
+          fd.append('imagen', extraFotos[i].file);
+          await addProductoImagen(productoId, fd);
+        }
+      }
+
       onSaved();
       onClose();
     } catch (err) {
       setError(err.response?.data?.error || 'Ocurrió un error');
     } finally {
       setLoading(false);
+      setUploadMsg('');
     }
   };
 
@@ -177,6 +209,46 @@ function ProductoModal({ producto, onClose, onSaved }) {
             <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
           </div>
 
+          {/* Fotos adicionales (galería del producto) */}
+          <div>
+            <label style={labelStyle}>Fotos adicionales (opcional, puedes elegir varias)</label>
+
+            {existentes.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                {existentes.map((url, i) => (
+                  <img key={`ex-${i}`} src={imgSrc(url)} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(184,134,46,0.25)' }} />
+                ))}
+              </div>
+            )}
+
+            {extraFotos.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                {extraFotos.map((f, i) => (
+                  <div key={i} style={{ position: 'relative', width: 56, height: 56 }}>
+                    <img src={f.preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(184,134,46,0.35)' }} />
+                    <button type="button" onClick={() => quitarExtraFoto(i)} style={{
+                      position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%',
+                      background: '#DC3545', color: '#fff', border: '2px solid #FFFCF7', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
+                    }}>
+                      <X size={11} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button type="button" onClick={() => extraFileRef.current.click()} style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+              border: '2px dashed rgba(184,134,46,0.35)', borderRadius: 12, padding: '12px',
+              background: 'rgba(255,248,238,0.6)', cursor: 'pointer', color: '#B8862E',
+              fontFamily: "'Cormorant Garamond'", fontSize: 13, justifyContent: 'center'
+            }}>
+              <Upload size={16} /> Agregar fotos (selección múltiple)
+            </button>
+            <input ref={extraFileRef} type="file" accept="image/*" multiple onChange={handleExtraFiles} style={{ display: 'none' }} />
+          </div>
+
           <div>
             <label style={labelStyle}>Nombre *</label>
             <input value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Mochila Wayuu Roja" style={inputStyle} />
@@ -208,7 +280,7 @@ function ProductoModal({ producto, onClose, onSaved }) {
             <button type="button" onClick={onClose} style={btnSecondary}>Cancelar</button>
             <button type="submit" disabled={loading} style={btnPrimary}>
               <Check size={15} />
-              {loading ? 'Guardando...' : esEdicion ? 'Guardar cambios' : 'Crear producto'}
+              {loading ? (uploadMsg || 'Guardando...') : esEdicion ? 'Guardar cambios' : 'Crear producto'}
             </button>
           </div>
         </form>
@@ -221,33 +293,45 @@ function ProductoModal({ producto, onClose, onSaved }) {
 
 function GaleriaModal({ item, onClose, onSaved }) {
   const [caption, setCaption] = useState(item?.caption ?? '');
-  const [foto, setFoto] = useState(null);
+  // Selección múltiple: cada foto elegida se sube como un ítem de galería aparte
+  const [fotos, setFotos] = useState([]); // [{ file, preview }]
   const [preview, setPreview] = useState(item?.url ? imgSrc(item.url) : null);
   const [loading, setLoading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState('');
   const [error, setError] = useState('');
   const fileRef = useRef();
   const esEdicion = !!item;
 
   const handleFile = (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    setFoto(f);
-    setPreview(URL.createObjectURL(f));
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    if (esEdicion) {
+      // En edición solo se reemplaza caption, no aplica multi-selección
+      return;
+    }
+    const nuevas = files.map(file => ({ file, preview: URL.createObjectURL(file) }));
+    setFotos(prev => [...prev, ...nuevas]);
+    e.target.value = '';
   };
+
+  const quitarFoto = (idx) => setFotos(prev => prev.filter((_, i) => i !== idx));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!esEdicion && !foto) { setError('La foto es obligatoria'); return; }
+    if (!esEdicion && fotos.length === 0) { setError('Selecciona al menos una foto'); return; }
     setLoading(true);
     setError('');
     try {
       if (esEdicion) {
         await updateGaleriaItem(item.id, { caption: caption || null });
       } else {
-        const form = new FormData();
-        form.append('foto', foto);
-        if (caption) form.append('caption', caption);
-        await createGaleriaItem(form);
+        for (let i = 0; i < fotos.length; i++) {
+          setUploadMsg(fotos.length > 1 ? `Subiendo foto ${i + 1} de ${fotos.length}...` : 'Subiendo...');
+          const form = new FormData();
+          form.append('foto', fotos[i].file);
+          if (caption) form.append('caption', caption);
+          await createGaleriaItem(form);
+        }
       }
       onSaved();
       onClose();
@@ -255,6 +339,7 @@ function GaleriaModal({ item, onClose, onSaved }) {
       setError(err.response?.data?.error || 'Ocurrió un error');
     } finally {
       setLoading(false);
+      setUploadMsg('');
     }
   };
 
@@ -290,24 +375,48 @@ function GaleriaModal({ item, onClose, onSaved }) {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {!esEdicion && (
             <div>
-              <label style={labelStyle}>Foto *</label>
-              <div
-                onClick={() => fileRef.current.click()}
-                style={{
-                  border: '2px dashed rgba(184,134,46,0.35)', borderRadius: 12,
-                  height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', overflow: 'hidden', background: 'rgba(255,248,238,0.6)'
-                }}
-              >
-                {preview
-                  ? <img src={preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <div style={{ textAlign: 'center', color: '#B8862E' }}>
-                      <Upload size={28} />
-                      <p style={{ fontSize: 13, marginTop: 8, fontFamily: "'Cormorant Garamond'" }}>Clic para subir foto</p>
+              <label style={labelStyle}>Fotos * (puedes seleccionar varias a la vez)</label>
+
+              {fotos.length > 0 ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                  {fotos.map((f, i) => (
+                    <div key={i} style={{ position: 'relative', width: 72, height: 72 }}>
+                      <img src={f.preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(184,134,46,0.3)' }} />
+                      <button type="button" onClick={() => quitarFoto(i)} style={{
+                        position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%',
+                        background: '#DC3545', color: '#fff', border: '2px solid #FFFCF7', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
+                      }}>
+                        <X size={11} />
+                      </button>
                     </div>
-                }
-              </div>
-              <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
+                  ))}
+                  <div
+                    onClick={() => fileRef.current.click()}
+                    style={{
+                      width: 72, height: 72, borderRadius: 10, border: '2px dashed rgba(184,134,46,0.35)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#B8862E'
+                    }}
+                  >
+                    <Plus size={20} />
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileRef.current.click()}
+                  style={{
+                    border: '2px dashed rgba(184,134,46,0.35)', borderRadius: 12,
+                    height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', overflow: 'hidden', background: 'rgba(255,248,238,0.6)'
+                  }}
+                >
+                  <div style={{ textAlign: 'center', color: '#B8862E' }}>
+                    <Upload size={28} />
+                    <p style={{ fontSize: 13, marginTop: 8, fontFamily: "'Cormorant Garamond'" }}>Clic para subir una o varias fotos</p>
+                  </div>
+                </div>
+              )}
+              <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleFile} style={{ display: 'none' }} />
             </div>
           )}
 
@@ -316,7 +425,7 @@ function GaleriaModal({ item, onClose, onSaved }) {
           )}
 
           <div>
-            <label style={labelStyle}>Caption (opcional)</label>
+            <label style={labelStyle}>Caption {fotos.length > 1 ? '(se aplica a todas las fotos, opcional)' : '(opcional)'}</label>
             <input value={caption} onChange={e => setCaption(e.target.value)}
               placeholder="Descripción de la foto..." style={inputStyle} />
           </div>
@@ -327,7 +436,7 @@ function GaleriaModal({ item, onClose, onSaved }) {
             <button type="button" onClick={onClose} style={btnSecondary}>Cancelar</button>
             <button type="submit" disabled={loading} style={btnPrimary}>
               <Check size={15} />
-              {loading ? 'Guardando...' : esEdicion ? 'Guardar' : 'Subir foto'}
+              {loading ? (uploadMsg || 'Guardando...') : esEdicion ? 'Guardar' : (fotos.length > 1 ? `Subir ${fotos.length} fotos` : 'Subir foto')}
             </button>
           </div>
         </form>
