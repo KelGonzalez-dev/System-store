@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getGaleria } from './api';
 import { toMediaUrl } from './config';
 
@@ -13,13 +13,10 @@ export default function Gallery() {
   const [loading, setLoading] = useState(true);
   const [current, setCurrent] = useState(null);
   const [hovered, setHovered] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(0);
+  const [zoomOrigin, setZoomOrigin] = useState('50% 50%');
+  const [isPlaying, setIsPlaying] = useState(false);
   const sectionRef = useRef(null);
-
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"]
-  });
-  const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
 
   // ── Cargar galería desde la API ───────────────────────────
   useEffect(() => {
@@ -46,6 +43,26 @@ export default function Gallery() {
     return () => window.removeEventListener('keydown', onKey);
   }, [current, images.length]);
 
+  useEffect(() => {
+    setZoomLevel(0);
+    setZoomOrigin('50% 50%');
+    setIsPlaying(false);
+  }, [current]);
+
+  useEffect(() => {
+    if (current === null || !isPlaying || images.length < 2) return undefined;
+    const timer = window.setInterval(() => setCurrent(index => (index + 1) % images.length), 2000);
+    return () => window.clearInterval(timer);
+  }, [current, images.length, isPlaying]);
+
+  useEffect(() => {
+    if (current === null) return undefined;
+    window.history.pushState({ galleryViewer: true }, '', window.location.href);
+    const onBack = () => setCurrent(null);
+    window.addEventListener('popstate', onBack);
+    return () => window.removeEventListener('popstate', onBack);
+  }, [current === null]);
+
   // Lock scroll
   useEffect(() => {
     document.body.style.overflow = current !== null ? 'hidden' : '';
@@ -65,17 +82,26 @@ export default function Gallery() {
   const mainImages  = images.slice(0, 7);
   const extraImages = images.slice(7);
 
+  const handleImageZoom = (event) => {
+    setIsPlaying(false);
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - bounds.left) / bounds.width) * 100;
+    const y = ((event.clientY - bounds.top) / bounds.height) * 100;
+    setZoomOrigin(`${Math.max(0, Math.min(100, x))}% ${Math.max(0, Math.min(100, y))}%`);
+    setZoomLevel(level => (level + 1) % 4);
+  };
+
   return (
     <section
       ref={sectionRef}
       id="galeria"
       style={{ position: "relative", padding: "100px clamp(16px,4vw,60px) 120px", overflow: "hidden" }}
     >
-      <motion.div style={{ y: bgY }} className="gallery-bg-layer" />
+      <div className="gallery-bg-layer" />
 
       <div style={{
         position: "absolute", inset: 0, zIndex: 0,
-        backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E\")",
+        backgroundImage: "none",
         pointerEvents: "none"
       }} />
 
@@ -155,7 +181,8 @@ export default function Gallery() {
                     <motion.img
                       src={img.url}
                       alt={img.caption}
-                      loading="lazy"
+                      loading={i < 2 ? "eager" : "lazy"}
+                      fetchPriority={i < 2 ? "high" : "low"}
                       decoding="async"
                       animate={{ scale: hovered === i ? 1.08 : 1 }}
                       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -225,82 +252,119 @@ export default function Gallery() {
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            style={{ position: "fixed", inset: 0, zIndex: 9000, background: "rgba(6,4,2,0.94)", backdropFilter: "blur(20px)", display: "flex", alignItems: "center", justifyContent: "center" }}
+            style={{ position: "fixed", inset: 0, zIndex: 2147483000, background: "rgba(255,255,255,0.98)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
             onClick={() => setCurrent(null)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               onClick={e => e.stopPropagation()}
-              style={{ position: "relative", maxWidth: "88vw", maxHeight: "88vh", borderRadius: 24, overflow: "hidden", boxShadow: "0 80px 160px rgba(0,0,0,0.6), 0 0 0 1px rgba(184,134,46,0.15)" }}
+              className="gallery-lightbox-frame"
+              style={{ position: "relative", width: "min(92vw, 980px)", maxHeight: "calc(100vh - 40px)", borderRadius: 16, overflow: "hidden", background: "#FFFFFF", boxShadow: "0 18px 60px rgba(45,31,17,0.16)", border: "1px solid rgba(184,134,46,0.25)", display: "flex", flexDirection: "column" }}
             >
-              <AnimatePresence mode="wait">
-                <motion.img
-                  key={current}
-                  src={images[current].url}
-                  alt={images[current].caption}
-                  initial={{ opacity: 0, scale: 1.04 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.97 }}
-                  transition={{ duration: 0.3 }}
-                  style={{ display: "block", maxWidth: "88vw", maxHeight: "82vh", width: "auto", height: "auto", objectFit: "contain" }}
-                />
-              </AnimatePresence>
+              {/* Foto + controles anclados a la foto */}
+              <div className="gallery-lightbox-imgwrap" style={{ position: "relative", flex: "1 1 auto", minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#FFFFFF" }}>
+                <AnimatePresence mode="wait">
+                  <img
+                    key={current}
+                    src={images[current].url}
+                    alt={images[current].caption}
+                    onClick={handleImageZoom}
+                    className="gallery-lightbox-image"
+                    style={{ display: "block", maxWidth: "100%", maxHeight: "100%", width: "auto", height: "auto", objectFit: "contain", background: "#FFFFFF", cursor: "zoom-in", transform: `scale(${zoomLevel === 0 ? 1 : zoomLevel === 1 ? 1.5 : zoomLevel === 2 ? 2 : 2.7})`, transformOrigin: zoomOrigin, transition: "transform 0.25s ease" }}
+                  />
+                </AnimatePresence>
 
-              {/* Caption */}
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "28px 28px 22px", background: "linear-gradient(180deg, transparent, rgba(8,5,2,0.85))", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                  <p style={{ fontFamily: "'Cormorant Garamond'", fontSize: 16, color: "#F7E3B7", margin: 0, letterSpacing: "0.06em" }}>
+                {images.length > 1 && (
+                  <button onClick={() => setIsPlaying(value => !value)} aria-label={isPlaying ? "Pausar presentación" : "Reproducir presentación"}
+                    style={{ position: "absolute", top: 14, left: 14, zIndex: 4, padding: "10px 14px", borderRadius: 999, border: "1px solid rgba(184,134,46,0.55)", background: isPlaying ? "#B8862E" : "rgba(255,255,255,0.96)", color: isPlaying ? "#FFF" : "#6B4B1F", cursor: "pointer", font: "600 12px Inter, sans-serif", boxShadow: "0 5px 16px rgba(45,31,17,0.16)" }}>
+                    {isPlaying ? "Pausar" : "Reproducir"}
+                  </button>
+                )}
+
+                {images.length > 1 && (
+                  <>
+                    <motion.button
+                      whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.95 }}
+                      onClick={e => { e.stopPropagation(); setCurrent(i => (i - 1 + images.length) % images.length); }}
+                      className="gallery-lightbox-arrow left" aria-label="Foto anterior">
+                      <ChevronLeft size={24} />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.95 }}
+                      onClick={e => { e.stopPropagation(); setCurrent(i => (i + 1) % images.length); }}
+                      className="gallery-lightbox-arrow right" aria-label="Foto siguiente">
+                      <ChevronRight size={24} />
+                    </motion.button>
+                  </>
+                )}
+
+                <button
+                  onClick={() => setCurrent(null)}
+                  aria-label="Cerrar galería"
+                  className="gallery-lightbox-close">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Caption: siempre visible completo, sin scroll */}
+              <div style={{ flex: "0 0 auto", position: "relative", padding: "14px 20px 16px", background: "#FFFFFF", borderTop: "1px solid rgba(184,134,46,0.16)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                <div style={{ flex: "1 1 70%", minWidth: 0 }}>
+                  <p style={{ maxWidth: "100%", overflowWrap: "anywhere", fontFamily: "'Cormorant Garamond'", fontSize: 17, color: "#3F3024", margin: 0, letterSpacing: "0.04em", lineHeight: 1.35 }}>
                     {images[current].caption}
                   </p>
-                  <p style={{ fontFamily: "'Cormorant Garamond'", fontSize: 13, color: "rgba(255,255,255,0.45)", margin: "4px 0 0", letterSpacing: "0.12em" }}>
+                  <p style={{ fontFamily: "'Cormorant Garamond'", fontSize: 13, color: "#8A7768", margin: "4px 0 0", letterSpacing: "0.12em" }}>
                     {current + 1} / {images.length}
                   </p>
                 </div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  {images.map((_, i) => (
-                    <button key={i} onClick={() => setCurrent(i)}
-                      style={{ width: i === current ? 20 : 6, height: 6, borderRadius: 3, background: i === current ? "var(--primary)" : "rgba(255,255,255,0.25)", border: "none", cursor: "pointer", padding: 0, transition: "all 0.3s ease" }}
-                    />
-                  ))}
-                </div>
+                {images.length > 1 && (
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {images.map((_, i) => (
+                      <button key={i} onClick={() => setCurrent(i)}
+                        style={{ width: i === current ? 20 : 6, height: 6, borderRadius: 3, background: i === current ? "var(--primary)" : "rgba(94,67,35,0.25)", border: "none", cursor: "pointer", padding: 0, transition: "all 0.3s ease" }}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
-
-            {/* Flechas */}
-            {[
-              { dir: -1, icon: <ChevronLeft size={24} />, side: "left" },
-              { dir:  1, icon: <ChevronRight size={24} />, side: "right" }
-            ].map(({ dir, icon, side }) => (
-              <motion.button
-                key={side}
-                whileHover={{ scale: 1.1, background: "rgba(184,134,46,0.25)" }}
-                whileTap={{ scale: 0.95 }}
-                onClick={e => { e.stopPropagation(); setCurrent(i => (i + dir + images.length) % images.length); }}
-                style={{ position: "absolute", [side]: 24, top: "50%", transform: "translateY(-50%)", width: 52, height: 52, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.14)", backdropFilter: "blur(10px)", color: "#FFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-              >
-                {icon}
-              </motion.button>
-            ))}
-
-            {/* Cerrar */}
-            <motion.button
-              whileHover={{ scale: 1.1, rotate: 90 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => setCurrent(null)}
-              style={{ position: "absolute", top: 24, right: 24, width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.18)", backdropFilter: "blur(10px)", color: "#FFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-            >
-              <X size={18} />
-            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
 
       <style>{`
+        .gallery-lightbox-imgwrap { min-height: 220px; }
+        .gallery-lightbox-arrow {
+          position: absolute; top: 50%; transform: translateY(-50%);
+          width: 56px; height: 56px; border-radius: 50%;
+          background: rgba(255,255,255,0.35);
+          backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+          border: 1.5px solid rgba(184,134,46,0.55);
+          color: #6B4B1F; display: flex; align-items: center; justify-content: center;
+          cursor: pointer; z-index: 3; box-shadow: 0 8px 24px rgba(45,31,17,0.18);
+          transition: background 0.2s ease;
+        }
+        .gallery-lightbox-arrow:hover { background: rgba(184,134,46,0.35); }
+        .gallery-lightbox-arrow.left { left: 14px; }
+        .gallery-lightbox-arrow.right { right: 14px; }
+        .gallery-lightbox-close {
+          position: absolute; top: 14px; right: 14px; z-index: 3;
+          width: 44px; height: 44px; border-radius: 50%;
+          background: rgba(255,255,255,0.55);
+          backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+          border: 1.5px solid rgba(184,134,46,0.55);
+          color: #6B4B1F; display: flex; align-items: center; justify-content: center;
+          cursor: pointer; box-shadow: 0 8px 24px rgba(45,31,17,0.18);
+        }
+        @media (max-width: 640px) {
+          .gallery-lightbox-frame { width: 100% !important; max-height: calc(100vh - 24px) !important; }
+          .gallery-lightbox-imgwrap { min-height: 180px; }
+          .gallery-lightbox-arrow { width: 46px !important; height: 46px !important; }
+          .gallery-lightbox-close { width: 40px !important; height: 40px !important; top: 10px !important; right: 10px !important; }
+        }
         .gallery-bg-layer {
           position: absolute; inset: 0; z-index: 0;
-          background: radial-gradient(ellipse 80% 60% at 50% 100%, rgba(184,134,46,0.07) 0%, transparent 70%),
-                      linear-gradient(180deg, #F6F0E7 0%, #FAF5EE 100%);
+          background: #FFFFFF;
         }
         @keyframes shimmer {
           0%   { background-position: 0% 50%; }

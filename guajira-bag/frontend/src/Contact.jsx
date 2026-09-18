@@ -26,6 +26,7 @@ function FloatingOrbs() {
     // gradientes radiales sin límite era la causa principal de que la
     // página se sintiera "trabada" al hacer scroll en teléfonos.
     const isMobile = window.matchMedia('(max-width: 640px)').matches;
+    if (isMobile) return undefined;
     const orbCount = isMobile ? 6 : 18;
     const targetFps = isMobile ? 24 : 60;
     const frameInterval = 1000 / targetFps;

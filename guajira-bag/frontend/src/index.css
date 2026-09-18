@@ -114,6 +114,19 @@ body {
 @media (max-width: 640px) {
   .page-bg { display: none; }
   .hero-section { overflow: visible !important; padding-top: 48px !important; }
+  .site-nav { backdrop-filter: none !important; }
+  .product-card-glow { box-shadow: 0 4px 12px rgba(45,31,17,.06); }
+}
+
+@media (max-width: 860px) {
+  .page-bg,
+  .section-rich::before,
+  .gallery-card::before { animation: none !important; }
+  .site-nav,
+  .hero-badge,
+  .hero-cta,
+  .product-card,
+  .gallery-card { backdrop-filter: none !important; }
 }
 .site-root > * { position: relative; z-index: 1; }
 
