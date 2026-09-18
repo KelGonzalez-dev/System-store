@@ -1,0 +1,12 @@
+RewriteEngine On
+
+# Servir archivos estáticos directamente
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Redirigir todo lo demás al front controller
+RewriteRule ^ index.php [QSA,L]
+
+# Permitir subida de archivos grandes (ajusta según tu hosting)
+php_value upload_max_filesize 6M
+php_value post_max_size 8M
