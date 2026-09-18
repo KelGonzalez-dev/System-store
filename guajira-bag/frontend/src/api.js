@@ -21,7 +21,7 @@ export const login = (data) =>
 // producto "no se actualizaba" aunque el backend sí lo hubiera guardado.
 export const getProductos = (pagina = 1, porPagina = 15, soloActivos = true) =>
   api.get('/productos', {
-    params: { pagina, porPagina, soloActivos, _ts: Date.now() }
+    params: { pagina, porPagina, soloActivos }
   }).then(r => r.data);
 
 export const createProducto = (formData) =>
@@ -42,7 +42,7 @@ export const deleteProductoImagen = (id, imagenId) =>
 // ── Galería ──────────────────────────────────────────────────
 export const getGaleria = (soloActivos = false) =>
   api.get('/galeria', {
-    params: { soloActivos, _ts: Date.now() }
+    params: { soloActivos }
   }).then(r => r.data);
 
 export const createGaleriaItem = (formData) =>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, X, Search, MessageCircle } from 'lucide-react';
+import { ShoppingCart, X, Search, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WA_NUMBER, fmt } from './data';
 import { getProductos } from './api';
@@ -44,9 +44,38 @@ const CATALOG_STYLES = `
   .catalog-item { content-visibility:auto; contain-intrinsic-size:420px; }
   .catalog-card-copy { color:#3F3024; }
   .catalog-card-description { color:#6B5743; }
-  .product-preview-image { cursor:zoom-in; }
-  .product-preview-image.is-zoomed { cursor:zoom-out; transform:scale(1.7); }
+  .product-preview-image { cursor:zoom-in; transform-origin:center; will-change:transform; }
+  .product-preview-image.zoom-level-1 { transform:scale(1.5); cursor:zoom-in; }
+  .product-preview-image.zoom-level-2 { transform:scale(2); cursor:zoom-in; }
+  .product-preview-image.zoom-level-3 { transform:scale(2.7); cursor:zoom-out; }
   .product-modal-info { min-width:0; }
+  .product-modal-close { top:12px !important; right:12px !important; }
+  .photo-viewer { position:fixed; inset:0; z-index:2147483000; isolation:isolate; background:rgba(9,7,4,.97); display:flex; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; }
+  .photo-viewer-stage { width:min(100%,1100px); max-height:100%; display:flex; flex-direction:column; align-items:stretch; position:relative; min-height:0; }
+  .photo-viewer-toolbar { flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+  .photo-viewer-frame { position:relative; flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:14px; }
+  .photo-viewer-image { max-width:100%; max-height:100%; object-fit:contain; cursor:zoom-in; transition:transform .2s ease; touch-action: manipulation; }
+  .photo-viewer-image.zoom-level-1 { transform:scale(1.5); cursor:zoom-in; }
+  .photo-viewer-image.zoom-level-2 { transform:scale(2); cursor:zoom-in; }
+  .photo-viewer-image.zoom-level-3 { transform:scale(2.7); cursor:zoom-out; }
+  .photo-viewer-close, .photo-viewer-play { flex-shrink:0; }
+  .photo-viewer-close { width:42px; height:42px; border:1px solid rgba(212,168,75,.5); border-radius:50%; background:rgba(24,19,12,.55); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 8px 22px rgba(0,0,0,.35); transition:background .2s ease, transform .2s ease; }
+  .photo-viewer-close:hover { background:rgba(184,134,46,.55); }
+  .photo-viewer-play { padding:10px 16px; border:1px solid rgba(212,168,75,.5); border-radius:999px; background:rgba(24,19,12,.55); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); color:#F5D98A; font:600 12px 'Inter',system-ui,sans-serif; cursor:pointer; box-shadow:0 8px 22px rgba(0,0,0,.35); transition:background .2s ease; }
+  .photo-viewer-play:hover { background:rgba(184,134,46,.45); }
+  .photo-viewer-arrow { position:absolute; top:50%; transform:translateY(-50%); width:52px; height:52px; border-radius:50%; background:rgba(24,19,12,.5); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1.5px solid rgba(212,168,75,.5); color:#F5D98A; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:3; box-shadow:0 8px 22px rgba(0,0,0,.35); transition:background .2s ease; }
+  .photo-viewer-arrow:hover { background:rgba(184,134,46,.5); }
+  .photo-viewer-arrow.left { left:12px; }
+  .photo-viewer-arrow.right { right:12px; }
+  .photo-viewer-title { flex:0 0 auto; margin:12px 0 0; text-align:center; color:#fff; font-family:'Inter',system-ui,sans-serif; font-size:16px; font-weight:600; }
+  .photo-viewer-thumbs { flex:0 0 auto; position:static; display:flex; gap:8px; max-width:100%; overflow-x:auto; padding:10px 2px 2px; margin-top:4px; }
+  .photo-viewer-thumbs button { flex:0 0 54px; width:54px; height:54px; padding:0; border:2px solid transparent; border-radius:8px; overflow:hidden; background:#333; cursor:pointer; }
+  .photo-viewer-thumbs button.active { border-color:#D4A84B; }
+  .photo-viewer-thumbs img { width:100%; height:100%; object-fit:cover; }
+  .modal-arrow { position:absolute; top:50%; transform:translateY(-50%); width:38px; height:38px; border-radius:50%; background:rgba(24,19,12,.45); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1.5px solid rgba(212,168,75,.5); color:#F5D98A; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:3; transition:background .2s ease; }
+  .modal-arrow:hover { background:rgba(184,134,46,.5); }
+  .modal-arrow.left { left:10px; }
+  .modal-arrow.right { right:10px; }
   @media (max-width: 900px) { .catalog-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; } }
   @media (max-width: 640px) {
     .catalog-grid { gap:12px; }
@@ -58,10 +87,17 @@ const CATALOG_STYLES = `
     .catalog-card-price { font-size:16px !important; }
     .catalog-card-button { padding:7px 9px !important; font-size:10px !important; }
     .product-modal { grid-template-columns:1fr !important; max-height:94vh !important; border-radius:14px !important; }
+    .product-modal { margin-top:68px; max-height:calc(100vh - 80px) !important; }
     .product-modal-gallery { border-radius:14px 14px 0 0 !important; }
     .product-modal-gallery > div:first-child { min-height:220px !important; }
     .product-modal-info { padding:30px 20px 22px !important; }
     .product-modal-info p { font-size:15px !important; line-height:1.55 !important; }
+    .photo-viewer { padding:calc(env(safe-area-inset-top, 0px) + 76px) 10px calc(env(safe-area-inset-bottom, 0px) + 14px) !important; align-items:center; }
+    .photo-viewer-stage { height:100%; max-height:100%; }
+    .photo-viewer-close { width:46px; height:46px; }
+    .photo-viewer-play { min-height:40px; padding:8px 14px; }
+    .photo-viewer-arrow { width:44px !important; height:44px !important; }
+    .product-modal-thumbs { display:none !important; }
   }
 `;
 
@@ -75,11 +111,87 @@ function ProductCardImage({ product, priority = false }) {
   );
 }
 
+function ProductPhotoViewer({ product, images, initialIndex, onClose }) {
+  const [imgIdx, setImgIdx] = useState(initialIndex);
+  const [zoomLevel, setZoomLevel] = useState(0);
+  const [origin, setOrigin] = useState({ x: 50, y: 50 });
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const handlePhotoClick = (event) => {
+    setIsPlaying(false);
+    const bounds = event.currentTarget.getBoundingClientRect();
+    setOrigin({
+      x: Math.max(0, Math.min(100, ((event.clientX - bounds.left) / bounds.width) * 100)),
+      y: Math.max(0, Math.min(100, ((event.clientY - bounds.top) / bounds.height) * 100)),
+    });
+    setZoomLevel(level => (level + 1) % 4);
+  };
+
+  useEffect(() => {
+    if (!isPlaying || images.length < 2) return undefined;
+    const timer = window.setInterval(() => setImgIdx(index => (index + 1) % images.length), 2000);
+    return () => window.clearInterval(timer);
+  }, [images.length, isPlaying]);
+
+  useEffect(() => {
+    window.history.pushState({ productPhotoViewer: true }, '', window.location.href);
+    const onBack = () => onClose();
+    window.addEventListener('popstate', onBack);
+    return () => window.removeEventListener('popstate', onBack);
+  }, []);
+
+  const goPrev = () => { setIsPlaying(false); setZoomLevel(0); setImgIdx(i => (i - 1 + images.length) % images.length); };
+  const goNext = () => { setIsPlaying(false); setZoomLevel(0); setImgIdx(i => (i + 1) % images.length); };
+
+  return (
+    <div className="photo-viewer" role="dialog" aria-modal="true" aria-label={`Fotos de ${product.name}`} onClick={onClose}>
+      <div className="photo-viewer-stage" onClick={e => e.stopPropagation()}>
+        <div className="photo-viewer-toolbar">
+          {images.length > 1 ? (
+            <button className="photo-viewer-play" onClick={() => setIsPlaying(value => !value)}>
+              {isPlaying ? 'Pausar' : 'Reproducir'}
+            </button>
+          ) : <span />}
+          <button className="photo-viewer-close" onClick={onClose} aria-label="Cerrar fotos"><X size={20} /></button>
+        </div>
+        <div className="photo-viewer-frame">
+          <img
+            src={images[imgIdx]}
+            alt={product.name}
+            loading="eager"
+            decoding="async"
+            onClick={handlePhotoClick}
+            className={`photo-viewer-image${zoomLevel ? ` zoom-level-${zoomLevel}` : ''}`}
+            style={{ transformOrigin: `${origin.x}% ${origin.y}%` }}
+          />
+          {images.length > 1 && (
+            <>
+              <button className="photo-viewer-arrow left" onClick={e => { e.stopPropagation(); goPrev(); }} aria-label="Foto anterior"><ChevronLeft size={24} /></button>
+              <button className="photo-viewer-arrow right" onClick={e => { e.stopPropagation(); goNext(); }} aria-label="Foto siguiente"><ChevronRight size={24} /></button>
+            </>
+          )}
+        </div>
+        <p className="photo-viewer-title">{product.name}</p>
+        {images.length > 1 && (
+          <div className="photo-viewer-thumbs" onClick={e => e.stopPropagation()}>
+            {images.map((image, index) => (
+              <button key={image} className={index === imgIdx ? 'active' : ''} onClick={() => { setImgIdx(index); setZoomLevel(0); }}>
+                <img src={image} alt={`${product.name} ${index + 1}`} loading="lazy" decoding="async" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── PRODUCT MODAL ─────────────────────────────────────────────────────────
 function ProductModal({ product, onClose, onAdd }) {
   const [imgIdx, setImgIdx] = useState(0);
-  const [zoomed, setZoomed] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(0);
   const [added, setAdded] = useState(false);
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
   const images = product.images?.length ? product.images : [product.image];
 
   useEffect(() => {
@@ -95,8 +207,10 @@ function ProductModal({ product, onClose, onAdd }) {
 
   const changeImage = (nextIdx) => {
     setImgIdx(nextIdx);
-    setZoomed(false);
+    setZoomLevel(0);
   };
+
+  const cycleZoom = () => setZoomLevel(level => (level + 1) % 4);
 
   const handleAdd = () => { onAdd(product); setAdded(true); setTimeout(() => setAdded(false), 1800); };
   const whatsappUrl = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hola! Me interesa la *${product.name}* (${fmt(product.price)}). ¿Está disponible?`)}`;
@@ -115,23 +229,29 @@ function ProductModal({ product, onClose, onAdd }) {
 
           <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,transparent,#B8862E,#F5D98A,#B8862E,transparent)", borderRadius:"24px 24px 0 0", zIndex:10 }} />
 
-          <motion.button onClick={onClose} whileHover={{ scale:1.1, rotate:90 }} transition={{ duration:0.2 }}
-            style={{ position:"absolute", top:16, right:16, zIndex:10, background:"rgba(184,134,46,0.15)", border:"1px solid rgba(184,134,46,0.3)", borderRadius:"50%", width:36, height:36, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <X size={16} color="#B8862E" />
-          </motion.button>
+          <button className="product-modal-close" onClick={onClose} aria-label="Cerrar vista previa"
+            style={{ position:"absolute", zIndex:20, background:"rgba(184,134,46,0.92)", border:"1px solid #B8862E", borderRadius:"50%", width:38, height:38, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <X size={16} color="#FFFFFF" />
+          </button>
 
           {/* Galería izquierda */}
           <div className="product-modal-gallery" style={{ borderRadius:"18px 0 0 18px", overflow:"hidden", background:"#F1E9DD", position:"relative" }}>
             <div style={{ width:"100%", aspectRatio:"1/1", minHeight:280, overflow:"hidden", position:"relative", display:"flex", alignItems:"center", justifyContent:"center" }}>
               <img key={imgIdx}
-                src={images[imgIdx]} loading="lazy" decoding="async" alt={product.name}
-                className={`product-preview-image${zoomed ? ' is-zoomed' : ''}`}
-                onClick={() => setZoomed(value => !value)}
+                src={images[imgIdx]} loading="eager" fetchPriority="high" decoding="async" alt={product.name}
+                className={`product-preview-image${zoomLevel ? ` zoom-level-${zoomLevel}` : ''}`}
+                onClick={() => setPhotoViewerOpen(true)}
                 style={{ width:"100%", height:"100%", objectFit:"contain", transition:"transform .3s ease" }} />
-              <div style={{ position:"absolute", bottom:12, left:12, padding:"6px 10px", borderRadius:8, background:"rgba(255,253,249,.9)", color:"#5E4323", fontSize:11, pointerEvents:"none" }}>{zoomed ? "Reducir" : "Ampliar"}</div>
+              {images.length > 1 && (
+                <>
+                  <button className="modal-arrow left" onClick={e => { e.stopPropagation(); changeImage((imgIdx - 1 + images.length) % images.length); }} aria-label="Foto anterior"><ChevronLeft size={18} /></button>
+                  <button className="modal-arrow right" onClick={e => { e.stopPropagation(); changeImage((imgIdx + 1) % images.length); }} aria-label="Foto siguiente"><ChevronRight size={18} /></button>
+                </>
+              )}
+              <button onClick={() => setPhotoViewerOpen(true)} style={{ position:"absolute", bottom:12, left:12, padding:"7px 12px", borderRadius:8, background:"rgba(255,253,249,.95)", color:"#5E4323", border:"1px solid rgba(184,134,46,.35)", fontSize:11, cursor:"pointer" }}>Ver fotos</button>
             </div>
             {images.length > 1 && (
-              <div style={{ display:"flex", gap:8, padding:"12px 14px", overflowX:"auto", background:"#F1E9DD" }}>
+              <div className="product-modal-thumbs" style={{ display:"flex", gap:8, padding:"12px 14px", overflowX:"auto", background:"#F1E9DD" }}>
                 {images.map((img, i) => (
                     <motion.button key={i} onClick={() => changeImage(i)} whileHover={{ scale:1.05 }}
                     style={{ flexShrink:0, width:54, height:54, borderRadius:10, overflow:"hidden", border: imgIdx===i ? "2px solid #B8862E":"2px solid rgba(184,134,46,0.15)", cursor:"pointer", padding:0, background:"none" }}>
@@ -174,34 +294,8 @@ function ProductModal({ product, onClose, onAdd }) {
           </div>
         </motion.div>
       </motion.div>
+      {photoViewerOpen && <ProductPhotoViewer product={product} images={images} initialIndex={imgIdx} onClose={() => setPhotoViewerOpen(false)} />}
     </AnimatePresence>
-  );
-}
-
-// ─── FLOATING PARTICLES ────────────────────────────────────────────────────
-function FloatingParticles() {
-  // Este fondo es "position:fixed" con varios elementos animando infinitamente,
-  // lo cual el navegador debe recalcular en cada frame de scroll. En celulares
-  // se reduce bastante la cantidad de partículas para aliviar la carga.
-  const [count, setCount] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches ? 3 : 8
-  );
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 640px)');
-    const onChange = () => setCount(mq.matches ? 3 : 8);
-    mq.addEventListener ? mq.addEventListener('change', onChange) : mq.addListener(onChange);
-    return () => {
-      mq.removeEventListener ? mq.removeEventListener('change', onChange) : mq.removeListener(onChange);
-    };
-  }, []);
-
-  return (
-    <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0, overflow:"hidden" }}>
-      {Array.from({ length: count }, (_, i) => (
-        <div key={i} style={{ position:"absolute", left:`${Math.random()*100}%`, top:`${Math.random()*100}%`, width:Math.random()*4+1, height:Math.random()*4+1, borderRadius:"50%", background:`rgba(184,134,46,${Math.random()*0.35+0.08})`, animation:`float-particle ${Math.random()*8+10}s ease-in-out infinite`, animationDelay:`${Math.random()*6}s`, willChange:"transform,opacity" }} />
-      ))}
-    </div>
   );
 }
 
@@ -315,15 +409,14 @@ export default function Catalog({ cart, onAdd }) {
                       No encontramos mochilas con ese criterio.
                     </motion.div>
                   ) : items.map((item, idx) => (
-                    <motion.div className="catalog-item" key={item.id} initial={{ opacity:0 }} animate={{ opacity:1 }}
-                      transition={{ duration:0.25 }}>
+                    <div className="catalog-item" key={item.id}>
                       <div onClick={() => setSelectedProduct(item)}>
                         <div className="product-card-glow" style={{ height:"100%" }}>
                           <div style={{ position:"relative", width:"100%", paddingBottom:"100%", overflow:"hidden", borderRadius:"20px 20px 0 0" }}>
                             <ProductCardImage product={item} priority={idx < 4} />
                             <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,transparent 40%,rgba(13,10,6,0.7) 100%)" }} />
                             <div className="img-overlay-shine" />
-                            <div style={{ position:"absolute", top:12, right:12, background:"rgba(184,134,46,0.15)", border:"1px solid rgba(184,134,46,0.3)", borderRadius:"50%", width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(8px)", color:"#D4A84B", fontSize:10, fontFamily:"'Bebas Neue'" }}>
+                            <div style={{ position:"absolute", top:12, right:12, background:"rgba(255,253,249,0.9)", border:"1px solid rgba(184,134,46,0.3)", borderRadius:"50%", width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", color:"#966719", fontSize:10, fontFamily:"'Bebas Neue'" }}>
                               {String(idx + 1 + (page - 1) * PAGE_SIZE).padStart(2, "0")}
                             </div>
                           </div>
@@ -333,15 +426,15 @@ export default function Catalog({ cart, onAdd }) {
                             <div style={{ height:1, background:"linear-gradient(90deg,rgba(184,134,46,0.4),transparent)", marginBottom:14 }} />
                             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                               <span className="catalog-card-price" style={{ fontFamily:"'Inter', system-ui, sans-serif", fontSize:20, fontWeight:800, color:"#966719", letterSpacing:"0.02em" }}>{fmt(item.price)}</span>
-                              <motion.button className="catalog-card-button" onClick={e=>{e.stopPropagation();setSelectedProduct(item);}} whileHover={{ scale:1.05 }} whileTap={{ scale:0.97 }}
+                              <button className="catalog-card-button" onClick={e=>{e.stopPropagation();setSelectedProduct(item);}}
                                 style={{ padding:"8px 16px", background:"linear-gradient(90deg,var(--primary),var(--secondary))", color:"#071327", border:"none", borderRadius:8, fontFamily:"'Inter', system-ui, sans-serif", fontSize:12, fontWeight:700, cursor:"pointer", letterSpacing:"0.04em", textTransform:"uppercase" }}>
                                 Ver detalle
-                              </motion.button>
+                              </button>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </AnimatePresence>

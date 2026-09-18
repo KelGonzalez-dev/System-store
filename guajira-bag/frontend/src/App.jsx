@@ -54,7 +54,7 @@ function Navbar({ cartCount, onCartOpen, currentPage, onNavigate, scrolled, user
           </button>
         ))}
       </div>
-      <button className="nav-toggle" onClick={() => setMobileOpen(v => !v)} style={{ display:'none', background:'none', border:'none', color:textColor, cursor:'pointer' }} aria-label="Menu">
+      <button className="nav-toggle" onClick={() => setMobileOpen(v => !v)} style={{ display:'none', marginLeft:'auto', background:'none', border:'none', color:textColor, cursor:'pointer' }} aria-label="Menu">
         <svg width="22" height="16" viewBox="0 0 22 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="22" height="2" rx="1" fill="currentColor"/><rect y="7" width="22" height="2" rx="1" fill="currentColor"/><rect y="14" width="22" height="2" rx="1" fill="currentColor"/></svg>
       </button>
       {mobileOpen && (
@@ -66,7 +66,7 @@ function Navbar({ cartCount, onCartOpen, currentPage, onNavigate, scrolled, user
       )}
 
       <div style={{ display:"flex", gap:12, alignItems:"center" }}>
-        <button onClick={onCartOpen} style={{ position:"relative", background:"var(--primary)", border:"none", borderRadius:"50%", width:46, height:46, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"transform 0.2s", boxShadow:"0 8px 30px rgba(0,0,0,0.12)" }}
+        <button className="nav-cart-button" onClick={onCartOpen} style={{ position:"relative", background:"var(--primary)", border:"none", borderRadius:"50%", width:46, height:46, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"transform 0.2s", boxShadow:"0 8px 30px rgba(0,0,0,0.12)" }}
           onMouseEnter={e => e.currentTarget.style.transform="scale(1.08)"}
           onMouseLeave={e => e.currentTarget.style.transform="scale(1)"}>
           <ShoppingCart size={18} color="#fff" />
@@ -366,7 +366,9 @@ export default function App() {
         @media (max-width:860px) {
           .nav-links { display: none !important; }
           .nav-toggle { display: inline-flex !important; align-items: center; justify-content: center; padding:8px; }
+          .nav-toggle { margin-left: auto !important; width:44px; height:44px; }
           .mobile-menu { display: flex !important; }
+          .nav-cart-button { display: none !important; }
         }
       `}</style>
       <style>{`
