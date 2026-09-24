@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { --ease: cubic-bezier(.2, .7, .2, 1); }
+
+html { scroll-behavior: smooth; scroll-padding-top: 4.5rem; -webkit-text-size-adjust: 100%; }
+body { @apply bg-cream font-body text-ink antialiased; overflow-x: hidden; }
+::selection { background: #75a32a; color: #023714; }
+:focus-visible { outline: 3px solid #fcbe39; outline-offset: 3px; border-radius: 6px; }
+
+@layer components {
+  .container-x { @apply mx-auto w-full max-w-7xl px-5 sm:px-8; }
+  .h-display { @apply font-display font-bold leading-[1.05] tracking-tight; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-[15px] font-semibold transition-[transform,background-color,color,box-shadow] duration-300 active:scale-95; }
+}
+
+/* ---------- Revelado al hacer scroll (solo transform / opacity) ---------- */
+.rv { opacity: 0; transition: opacity .9s var(--ease) var(--d, 0ms), transform .9s var(--ease) var(--d, 0ms); }
+.rv[data-v='up'] { transform: translate3d(0, 34px, 0); }
+.rv[data-v='left'] { transform: translate3d(-44px, 0, 0); }
+.rv[data-v='right'] { transform: translate3d(44px, 0, 0); }
+.rv[data-v='zoom'] { transform: scale(.86); }
+/* clip: el recorte va en el HIJO (si va en el observado, nunca se detecta y queda vacío) */
+.rv[data-v='clip'] { opacity: 1; }
+.rv[data-v='clip'] > * { clip-path: inset(0 0 100% 0 round 1.5rem); transition: clip-path 1.1s var(--ease) var(--d, 0ms); }
+.rv.is-in { opacity: 1; transform: none; }
+.rv[data-v='clip'].is-in > * { clip-path: inset(0 0 0 0 round 1.5rem); }
+
+/* ---------- Entrada orquestada del hero ---------- */
+.hero-item { opacity: 0; }
+html.ready .hero-item { animation: heroIn 1s var(--ease) both; animation-delay: var(--d, 0ms); }
+@keyframes heroIn { from { opacity: 0; transform: translate3d(0, 30px, 0); } to { opacity: 1; transform: none; } }
+.hero-emblem { opacity: 0; }
+html.ready .hero-emblem { animation: emblemIn 1.4s var(--ease) .5s both; }
+@keyframes emblemIn { from { opacity: 0; transform: scale(.7) rotate(-8deg); } to { opacity: 1; transform: none; } }
+
+/* ---------- Pantalla de carga ---------- */
+@keyframes fillUp { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes pop { from { transform: translateY(-50%) scale(0); } 60% { transform: translateY(-50%) scale(1.5); } to { transform: translateY(-50%) scale(1); } }
+@keyframes lit { from { opacity: .35; } to { opacity: 1; } }
+@keyframes factIn { from { opacity: 0; transform: translate3d(0, 14px, 0); } to { opacity: 1; transform: none; } }
+@keyframes glow { 0%, 100% { opacity: .55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.06); } }
+.ld-fill { animation: fillUp 6.3s linear forwards; }
+.ld-wave { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.2s linear both; }
+.ld-dot { transform: translateY(-50%) scale(0); animation: pop .5s var(--ease) both; }
+.ld-lab { opacity: .35; animation: lit .4s ease both; }
+.ld-fact { animation: factIn .8s var(--ease) both; }
+.ld-glow { animation: glow 2.4s ease-in-out infinite; }
+.ld-root { transition: opacity .7s ease, transform .9s var(--ease), visibility 0s linear .9s; }
+.ld-root.leaving { opacity: 0; transform: translate3d(0, -6%, 0) scale(1.03); visibility: hidden; pointer-events: none; }
+
+/* Movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .rv, .rv[data-v] { opacity: 1; transform: none; transition: none; }
+  .rv[data-v='clip'] > * { clip-path: none; transition: none; }
+  .hero-item, .hero-emblem { opacity: 1; animation: none !important; }
+  .animate-marquee, .animate-floaty, .animate-ping2 { animation: none; }
+}
+
+.no-scrollbar { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ---------- Efecto 3D ligado al scroll (solo CSS, sin JS) ----------
+   Usa animation-timeline: se mueve en la GPU y no toca el hilo principal.
+   Navegadores sin soporte simplemente no lo muestran (todo se ve normal). */
+@keyframes s3dUp { from { transform: perspective(1200px) rotateX(24deg) translate3d(0, 60px, 0) scale(.92); } to { transform: perspective(1200px) rotateX(0) translate3d(0, 0, 0) scale(1); } }
+@keyframes s3dL { from { transform: perspective(1200px) rotateY(26deg) translate3d(-36px, 30px, 0) scale(.93); } to { transform: perspective(1200px) rotateY(0) translate3d(0, 0, 0) scale(1); } }
+@keyframes s3dR { from { transform: perspective(1200px) rotateY(-26deg) translate3d(36px, 30px, 0) scale(.93); } to { transform: perspective(1200px) rotateY(0) translate3d(0, 0, 0) scale(1); } }
+@keyframes emblemSpin { from { transform: perspective(1100px) rotateY(0) rotateX(0) scale(1); } to { transform: perspective(1100px) rotateY(-28deg) rotateX(6deg) translate3d(0, -24px, 0) scale(.86); } }
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .s3d, .s3d-l, .s3d-r { animation-timing-function: linear; animation-fill-mode: both; animation-timeline: view(); animation-range: entry 0% cover 32%; }
+    .s3d { animation-name: s3dUp; }
+    .s3d-l { animation-name: s3dL; }
+    .s3d-r { animation-name: s3dR; }
+    .emblem-scroll { animation: emblemSpin linear both; animation-timeline: scroll(root); animation-range: 0px 90vh; }
+  }
+}
