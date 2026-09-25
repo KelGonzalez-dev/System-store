@@ -4,7 +4,7 @@
 
 export const BRAND = {
   name: 'Tres Raíces',
-  type: 'Cooperativa Agroecológica',
+  type: 'Precooperativa Multiactiva Agroecológica Raíces de la Sierra Nevada',
   legal: 'Precooperativa Multiactiva Agroecológica Raíces de la Sierra Nevada',
   sigla: 'COOAGRORAICES',
   territory: 'Sierra Nevada de Santa Marta · Cesar y Magdalena',
@@ -19,6 +19,9 @@ export const CONTACT = {
   facebook: '#',
   youtube: '#',
 };
+
+// Certificación / registro como Entidad Sin Ánimo de Lucro (ESAL)
+export const ESAL_URL = 'https://anei.org.co/esal';
 
 export const waLink = (text = 'Hola Tres Raíces, quiero más información.') =>
   `https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent(text)}`;
