@@ -3,5 +3,5 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  build: { target: 'es2019', cssMinify: true },
+  build: { outDir: 'build', emptyOutDir: true, target: 'es2019', cssMinify: true },
 });
