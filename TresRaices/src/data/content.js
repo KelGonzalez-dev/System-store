@@ -21,7 +21,7 @@ export const CONTACT = {
 };
 
 // Certificación / registro como Entidad Sin Ánimo de Lucro (ESAL)
-export const ESAL_URL = 'https://anei.org.co/esal';
+//export const ESAL_URL = 'https://anei.org.co/esal';
 
 export const waLink = (text = 'Hola Tres Raíces, quiero más información.') =>
   `https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent(text)}`;

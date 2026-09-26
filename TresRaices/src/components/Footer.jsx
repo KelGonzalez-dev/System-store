@@ -53,9 +53,6 @@ export default function Footer() {
         <div className="container-x flex flex-wrap items-center justify-between gap-3 py-5 text-xs text-white/60">
           <p>© {new Date().getFullYear()} {BRAND.name} {BRAND.type}. Todos los derechos reservados.</p>
           <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <a href={ESAL_URL} target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-4 hover:text-gold-light">
-              ESAL
-            </a>
             <button type="button" onClick={() => window.dispatchEvent(new Event('open-cookies'))} className="font-semibold underline underline-offset-4 hover:text-gold-light">
               Preferencias de cookies
             </button>
