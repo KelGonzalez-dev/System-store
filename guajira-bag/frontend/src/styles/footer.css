@@ -1,0 +1,22 @@
+.footer { position: relative; background: var(--wood-900); color: var(--ivory); padding: 68px 0 26px; overflow: hidden; }
+.footer::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: 50%;
+  width: 70vmax;
+  height: 70vmax;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(228, 191, 84, 0.1) 0%, transparent 62%);
+  pointer-events: none;
+}
+.footer__inner { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
+.footer__logo { width: 76px; height: 76px; border-radius: 50%; }
+.footer__brand { font-family: var(--f-display); font-size: 22px; }
+.footer__tag { font-size: 14px; font-style: italic; color: rgba(251, 246, 234, 0.62); max-width: 340px; }
+.footer__social { display: flex; gap: 14px; margin-top: 6px; }
+.footer__social a { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; border: 1px solid rgba(228, 191, 84, 0.3); color: var(--gold-300); transition: background-color 0.3s, transform 0.3s, border-color 0.3s; }
+.footer__social a:hover { background: var(--gold-flat); color: var(--wood-900); border-color: transparent; transform: translateY(-3px); }
+.footer__admin { margin-top: 4px; font-size: 11px; letter-spacing: 0.1em; color: rgba(251, 246, 234, 0.32); padding: 6px; transition: color 0.3s; }
+.footer__admin:hover { color: rgba(251, 246, 234, 0.6); }
+.footer__legal { margin-top: 10px; font-size: 12px; letter-spacing: 0.05em; color: rgba(251, 246, 234, 0.42); }

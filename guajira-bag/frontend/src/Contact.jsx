@@ -101,7 +101,7 @@ function GridLines() {
     <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 0, opacity: 0.035, pointerEvents: "none" }}>
       <defs>
         <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
-          <path d="M 80 0 L 0 0 0 80" fill="none" stroke="#B8862E" strokeWidth="0.8" />
+          <path d="M 80 0 L 0 0 0 80" fill="none" stroke="#BE5B2E" strokeWidth="0.8" />
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill="url(#grid)" />
@@ -161,7 +161,7 @@ function ContactCard({ icon, title, content, link, delay, accent }) {
           style={{
             width: 64, height: 64, borderRadius: "50%",
             background: hov
-              ? "linear-gradient(135deg, #B8862E 0%, #E6C98A 100%)"
+              ? "linear-gradient(135deg, #BE5B2E 0%, #E0A85A 100%)"
               : "linear-gradient(135deg, rgba(184,134,46,0.12) 0%, rgba(230,201,138,0.12) 100%)",
             border: `1.5px solid ${hov ? "transparent" : "rgba(184,134,46,0.22)"}`,
             display: "flex", alignItems: "center", justifyContent: "center",
@@ -170,12 +170,12 @@ function ContactCard({ icon, title, content, link, delay, accent }) {
             transition: "all 0.4s"
           }}
         >
-          {React.cloneElement(icon, { color: hov ? "#FFF" : "#B8862E", size: 26 })}
+          {React.cloneElement(icon, { color: hov ? "#FFF" : "#BE5B2E", size: 26 })}
         </motion.div>
 
         <h3 style={{
           fontFamily: "'Inter', system-ui, sans-serif", fontSize: 20, fontWeight: 600,
-          color: "#1A1A1A", marginBottom: 10, letterSpacing: "0.01em"
+          color: "#1C140C", marginBottom: 10, letterSpacing: "0.01em"
         }}>
           {title}
         </h3>
@@ -316,7 +316,7 @@ export default function Contact() {
               style={{
                 fontFamily: "'Inter', system-ui, sans-serif",
                 fontSize: "clamp(44px, 6vw, 80px)",
-                fontWeight: 700, color: "#1A1A1A", lineHeight: 0.92, marginBottom: 24
+                fontWeight: 700, color: "#1C140C", lineHeight: 0.92, marginBottom: 24
               }}
             >
               ¿Hablamos?
@@ -367,7 +367,7 @@ export default function Contact() {
             style={{
               display: "inline-flex", alignItems: "center", gap: 12,
               padding: "18px 44px",
-              background: "linear-gradient(135deg, #B8862E 0%, #D4A84B 50%, #B8862E 100%)",
+              background: "linear-gradient(135deg, #BE5B2E 0%, #E0A85A 50%, #BE5B2E 100%)",
               backgroundSize: "200%",
               color: "#FFF", borderRadius: 100,
               fontFamily: "'Cormorant Garamond'", fontSize: 18, fontWeight: 600,
@@ -411,7 +411,7 @@ export default function Contact() {
                   background: "rgba(255,255,255,0.7)",
                   border: "1px solid rgba(184,134,46,0.2)",
                   borderRadius: 100,
-                  color: "#1A1A1A", textDecoration: "none",
+                  color: "#1C140C", textDecoration: "none",
                   fontFamily: "'Cormorant Garamond'", fontSize: 15,
                   backdropFilter: "blur(8px)",
                   boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
