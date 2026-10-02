@@ -43,12 +43,12 @@ function ConfirmDialog({ msg, onConfirm, onCancel }) {
       <motion.div
         initial={{ scale: 0.95 }} animate={{ scale: 1 }}
         style={{
-          background: '#FFFCF7', borderRadius: 18, padding: '32px 36px',
+          background: '#FFFBF2', borderRadius: 18, padding: '32px 36px',
           maxWidth: 380, width: '100%', textAlign: 'center',
           boxShadow: '0 40px 80px rgba(0,0,0,0.20)'
         }}
       >
-        <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 17, color: '#1A1A1A', marginBottom: 24 }}>{msg}</p>
+        <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 17, color: '#1C140C', marginBottom: 24 }}>{msg}</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
           <button onClick={onCancel} style={{
             padding: '10px 24px', borderRadius: 8, border: '1px solid #ddd',
@@ -169,14 +169,14 @@ function ProductoModal({ producto, onClose, onSaved }) {
         transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
         onClick={e => e.stopPropagation()}
         style={{
-          background: '#FFFCF7', borderRadius: 22, width: '100%', maxWidth: 580,
+          background: '#FFFBF2', borderRadius: 22, width: '100%', maxWidth: 580,
           maxHeight: '90vh', overflowY: 'auto',
           padding: '36px 36px 32px',
           boxShadow: '0 60px 120px rgba(0,0,0,0.25)'
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-          <h2 style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 22, color: '#1A1A1A' }}>
+          <h2 style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 22, color: '#1C140C' }}>
             {esEdicion ? 'Editar Producto' : 'Nuevo Producto'}
           </h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -197,12 +197,12 @@ function ProductoModal({ producto, onClose, onSaved }) {
                 cursor: 'pointer', overflow: 'hidden', background: 'rgba(255,248,238,0.6)',
                 transition: 'border 0.2s'
               }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = '#B8862E'}
+              onMouseEnter={e => e.currentTarget.style.borderColor = '#BE5B2E'}
               onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(184,134,46,0.35)'}
             >
               {preview
                 ? <img src={preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <div style={{ textAlign: 'center', color: '#B8862E' }}>
+                : <div style={{ textAlign: 'center', color: '#BE5B2E' }}>
                     <Upload size={28} />
                     <p style={{ fontSize: 13, marginTop: 8, fontFamily: "'Cormorant Garamond'" }}>Clic para subir imagen</p>
                   </div>
@@ -230,7 +230,7 @@ function ProductoModal({ producto, onClose, onSaved }) {
                     <img src={f.preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(184,134,46,0.35)' }} />
                     <button type="button" onClick={() => quitarExtraFoto(i)} style={{
                       position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%',
-                      background: '#DC3545', color: '#fff', border: '2px solid #FFFCF7', cursor: 'pointer',
+                      background: '#DC3545', color: '#fff', border: '2px solid #FFFBF2', cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
                     }}>
                       <X size={11} />
@@ -243,7 +243,7 @@ function ProductoModal({ producto, onClose, onSaved }) {
             <button type="button" onClick={() => extraFileRef.current.click()} style={{
               display: 'flex', alignItems: 'center', gap: 8, width: '100%',
               border: '2px dashed rgba(184,134,46,0.35)', borderRadius: 12, padding: '12px',
-              background: 'rgba(255,248,238,0.6)', cursor: 'pointer', color: '#B8862E',
+              background: 'rgba(255,248,238,0.6)', cursor: 'pointer', color: '#BE5B2E',
               fontFamily: "'Cormorant Garamond'", fontSize: 13, justifyContent: 'center'
             }}>
               <Upload size={16} /> Agregar fotos (selección múltiple)
@@ -365,13 +365,13 @@ function GaleriaModal({ item, onClose, onSaved }) {
         transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
         onClick={e => e.stopPropagation()}
         style={{
-          background: '#FFFCF7', borderRadius: 22, width: '100%', maxWidth: 460,
+          background: '#FFFBF2', borderRadius: 22, width: '100%', maxWidth: 460,
           padding: '36px 36px 32px',
           boxShadow: '0 60px 120px rgba(0,0,0,0.25)'
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-          <h2 style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 22, color: '#1A1A1A' }}>
+          <h2 style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 22, color: '#1C140C' }}>
             {esEdicion ? 'Editar imagen' : 'Nueva imagen'}
           </h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -391,7 +391,7 @@ function GaleriaModal({ item, onClose, onSaved }) {
                       <img src={f.preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(184,134,46,0.3)' }} />
                       <button type="button" onClick={() => quitarFoto(i)} style={{
                         position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%',
-                        background: '#DC3545', color: '#fff', border: '2px solid #FFFCF7', cursor: 'pointer',
+                        background: '#DC3545', color: '#fff', border: '2px solid #FFFBF2', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
                       }}>
                         <X size={11} />
@@ -402,7 +402,7 @@ function GaleriaModal({ item, onClose, onSaved }) {
                     onClick={() => fileRef.current.click()}
                     style={{
                       width: 72, height: 72, borderRadius: 10, border: '2px dashed rgba(184,134,46,0.35)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#B8862E'
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#BE5B2E'
                     }}
                   >
                     <Plus size={20} />
@@ -417,7 +417,7 @@ function GaleriaModal({ item, onClose, onSaved }) {
                     cursor: 'pointer', overflow: 'hidden', background: 'rgba(255,248,238,0.6)'
                   }}
                 >
-                  <div style={{ textAlign: 'center', color: '#B8862E' }}>
+                  <div style={{ textAlign: 'center', color: '#BE5B2E' }}>
                     <Upload size={28} />
                     <p style={{ fontSize: 13, marginTop: 8, fontFamily: "'Cormorant Garamond'" }}>Clic para subir una o varias fotos</p>
                   </div>
@@ -560,7 +560,7 @@ export default function AdminPanel({ user, onLogout }) {
 
       {/* ── Top bar ── */}
       <div style={{
-        background: '#1A1A1A', color: '#F7E3B7',
+        background: '#1C140C', color: '#F0D9A8',
         padding: '0 clamp(16px,4vw,60px)', height: 64,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         position: 'sticky', top: 0, zIndex: 100
@@ -579,7 +579,7 @@ export default function AdminPanel({ user, onLogout }) {
           </span>
           <button onClick={onLogout} style={{
             background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: 8, color: '#F7E3B7', padding: '7px 14px', cursor: 'pointer',
+            borderRadius: 8, color: '#F0D9A8', padding: '7px 14px', cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 6,
             fontFamily: "'Cormorant Garamond'", fontSize: 13
           }}>
@@ -600,8 +600,8 @@ export default function AdminPanel({ user, onLogout }) {
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '10px 22px', borderRadius: 9, border: 'none', cursor: 'pointer',
               fontFamily: "'Cormorant Garamond'", fontSize: 15, fontWeight: 600,
-              background: tab === t.key ? '#FFFCF7' : 'transparent',
-              color: tab === t.key ? '#B8862E' : '#9A8E84',
+              background: tab === t.key ? '#FFFBF2' : 'transparent',
+              color: tab === t.key ? '#BE5B2E' : '#8A7A6C',
               boxShadow: tab === t.key ? '0 2px 12px rgba(0,0,0,0.08)' : 'none',
               transition: 'all 0.2s'
             }}>
@@ -615,8 +615,8 @@ export default function AdminPanel({ user, onLogout }) {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <div>
-                <h1 style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 28, color: '#1A1A1A', marginBottom: 4 }}>Productos</h1>
-                <p style={{ fontSize: 13, color: '#9A8E84', fontFamily: "'Cormorant Garamond'" }}>{prodTotal} productos en total</p>
+                <h1 style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 28, color: '#1C140C', marginBottom: 4 }}>Productos</h1>
+                <p style={{ fontSize: 13, color: '#8A7A6C', fontFamily: "'Cormorant Garamond'" }}>{prodTotal} productos en total</p>
               </div>
               <button onClick={() => setModalProducto('new')} style={btnPrimary}>
                 <Plus size={15} /> Nuevo producto
@@ -624,13 +624,13 @@ export default function AdminPanel({ user, onLogout }) {
             </div>
 
             {loadingProd ? (
-              <div style={{ textAlign: 'center', padding: 60, color: '#9A8E84', fontFamily: "'Cormorant Garamond'" }}>Cargando...</div>
+              <div style={{ textAlign: 'center', padding: 60, color: '#8A7A6C', fontFamily: "'Cormorant Garamond'" }}>Cargando...</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {productos.map(p => (
                   <motion.div key={p.id} layout
                     style={{
-                      background: '#FFFCF7', borderRadius: 14,
+                      background: '#FFFBF2', borderRadius: 14,
                       border: '1px solid rgba(184,134,46,0.14)',
                       display: 'flex', alignItems: 'center', gap: 16,
                       padding: '14px 18px',
@@ -638,27 +638,27 @@ export default function AdminPanel({ user, onLogout }) {
                     }}
                   >
                     {/* Imagen */}
-                    <div style={{ width: 64, height: 64, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: '#F4EDE1' }}>
+                    <div style={{ width: 64, height: 64, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: '#F6EEDB' }}>
                       {p.imagenUrl
                         ? <img src={imgSrc(p.imagenUrl)} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Package size={20} color="#C8B89A" />
+                            <Package size={20} color="#C9A97C" />
                           </div>
                       }
                     </div>
 
                     {/* Info */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 15, fontWeight: 700, color: '#1A1A1A', marginBottom: 2 }}>
+                      <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 15, fontWeight: 700, color: '#1C140C', marginBottom: 2 }}>
                         {p.nombre}
                       </div>
-                      <div style={{ fontSize: 12, color: '#9A8E84', fontFamily: "'Cormorant Garamond'", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontSize: 12, color: '#8A7A6C', fontFamily: "'Cormorant Garamond'", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {p.descripcion}
                       </div>
                     </div>
 
                     {/* Precio */}
-                    <div style={{ fontFamily: "'Bebas Neue'", fontSize: 18, color: '#B8862E', whiteSpace: 'nowrap', marginRight: 8 }}>
+                    <div style={{ fontFamily: "'Bebas Neue'", fontSize: 18, color: '#BE5B2E', whiteSpace: 'nowrap', marginRight: 8 }}>
                       ${Number(p.precio).toLocaleString('es-CO')}
                     </div>
 
@@ -674,7 +674,7 @@ export default function AdminPanel({ user, onLogout }) {
 
                     {/* Acciones */}
                     <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                      <button onClick={() => setModalProducto(p)} style={iconBtn('#B8862E')}>
+                      <button onClick={() => setModalProducto(p)} style={iconBtn('#BE5B2E')}>
                         <Pencil size={15} />
                       </button>
                       <button onClick={() => handleDeleteProducto(p.id, p.nombre)} style={iconBtn('#DC3545')}>
@@ -710,8 +710,8 @@ export default function AdminPanel({ user, onLogout }) {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <div>
-                <h1 style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 28, color: '#1A1A1A', marginBottom: 4 }}>Galería</h1>
-                <p style={{ fontSize: 13, color: '#9A8E84', fontFamily: "'Cormorant Garamond'" }}>{galeria.length} imágenes</p>
+                <h1 style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 28, color: '#1C140C', marginBottom: 4 }}>Galería</h1>
+                <p style={{ fontSize: 13, color: '#8A7A6C', fontFamily: "'Cormorant Garamond'" }}>{galeria.length} imágenes</p>
               </div>
               <button onClick={() => setModalGaleria('new')} style={btnPrimary}>
                 <Plus size={15} /> Subir foto
@@ -719,7 +719,7 @@ export default function AdminPanel({ user, onLogout }) {
             </div>
 
             {loadingGal ? (
-              <div style={{ textAlign: 'center', padding: 60, color: '#9A8E84', fontFamily: "'Cormorant Garamond'" }}>Cargando...</div>
+              <div style={{ textAlign: 'center', padding: 60, color: '#8A7A6C', fontFamily: "'Cormorant Garamond'" }}>Cargando...</div>
             ) : (
               <div style={{
                 display: 'grid',
@@ -728,13 +728,13 @@ export default function AdminPanel({ user, onLogout }) {
               }}>
                 {galeria.map(item => (
                   <motion.div key={item.id} layout style={{
-                    background: '#FFFCF7', borderRadius: 14,
+                    background: '#FFFBF2', borderRadius: 14,
                     border: '1px solid rgba(184,134,46,0.14)',
                     overflow: 'hidden',
                     boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
                     opacity: item.activo ? 1 : 0.5
                   }}>
-                    <div style={{ position: 'relative', paddingBottom: '80%', background: '#F4EDE1' }}>
+                    <div style={{ position: 'relative', paddingBottom: '80%', background: '#F6EEDB' }}>
                       <img
                         src={imgSrc(item.url)}
                         alt={item.caption ?? ''}
@@ -751,13 +751,13 @@ export default function AdminPanel({ user, onLogout }) {
                     </div>
                     <div style={{ padding: '12px 14px' }}>
                       <p style={{ fontSize: 12, color: '#6B6259', fontFamily: "'Cormorant Garamond'", marginBottom: 10, minHeight: 18 }}>
-                        {item.caption || <span style={{ color: '#C8B89A', fontStyle: 'italic' }}>Sin caption</span>}
+                        {item.caption || <span style={{ color: '#C9A97C', fontStyle: 'italic' }}>Sin caption</span>}
                       </p>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => toggleActivoGaleria(item)} style={{ ...iconBtn(item.activo ? '#9A8E84' : '#28a745'), flex: 1, borderRadius: 7, padding: '6px 0', fontSize: 11, fontFamily: "'Cormorant Garamond'" }}>
+                        <button onClick={() => toggleActivoGaleria(item)} style={{ ...iconBtn(item.activo ? '#8A7A6C' : '#28a745'), flex: 1, borderRadius: 7, padding: '6px 0', fontSize: 11, fontFamily: "'Cormorant Garamond'" }}>
                           {item.activo ? 'Ocultar' : 'Mostrar'}
                         </button>
-                        <button onClick={() => setModalGaleria(item)} style={iconBtn('#B8862E')}>
+                        <button onClick={() => setModalGaleria(item)} style={iconBtn('#BE5B2E')}>
                           <Pencil size={14} />
                         </button>
                         <button onClick={() => handleDeleteGaleria(item.id)} style={iconBtn('#DC3545')}>
@@ -805,7 +805,7 @@ export default function AdminPanel({ user, onLogout }) {
 // ── Estilos reutilizables ─────────────────────────────────────
 
 const labelStyle = {
-  fontSize: 11, letterSpacing: '0.1em', color: '#9A8E84',
+  fontSize: 11, letterSpacing: '0.1em', color: '#8A7A6C',
   textTransform: 'uppercase', display: 'block', marginBottom: 6
 };
 
@@ -813,7 +813,7 @@ const inputStyle = {
   width: '100%', padding: '12px 14px',
   border: '1px solid rgba(184,134,46,0.22)', borderRadius: 10,
   fontSize: 14, fontFamily: "'Cormorant Garamond'",
-  background: 'rgba(255,248,238,0.8)', color: '#1A1A1A',
+  background: 'rgba(255,248,238,0.8)', color: '#1C140C',
   outline: 'none', boxSizing: 'border-box'
 };
 
@@ -825,7 +825,7 @@ const errorStyle = {
 
 const btnPrimary = {
   padding: '11px 20px',
-  background: 'linear-gradient(135deg, #B8862E 0%, #E6C98A 100%)',
+  background: 'linear-gradient(135deg, #BE5B2E 0%, #E0A85A 100%)',
   color: '#FFF', border: 'none', borderRadius: 10,
   fontFamily: "'Cormorant Garamond'", fontSize: 14, fontWeight: 600,
   cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7,
@@ -847,7 +847,7 @@ const iconBtn = (color) => ({
 });
 
 const pageBtn = () => ({
-  background: '#FFFCF7', border: '1px solid rgba(184,134,46,0.22)',
+  background: '#FFFBF2', border: '1px solid rgba(184,134,46,0.22)',
   borderRadius: 8, width: 34, height: 34,
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   cursor: 'pointer', color: '#5B524B'

@@ -1,0 +1,47 @@
+.ld-root { --r: min(31vw, 21svh, 158px); position: fixed; inset: 0; z-index: 400; overflow: hidden; visibility: visible; }
+.ld-root.ld-leaving { pointer-events: none; visibility: hidden; transition: visibility 0s linear 1.25s; }
+/* Cortina: dos mitades que se abren y dejan ver el hero */
+.ld-panel { position: absolute; top: 0; bottom: 0; width: 50.5%; background: #f8eee4; transition: transform 1.15s var(--ease-io); will-change: transform; }
+.ld-panel--l { left: 0; background: linear-gradient(90deg, #f9efe6, #f5e2d6);  }
+.ld-panel--r { right: 0; background: linear-gradient(270deg, #f9efe6, #f5e2d6);  }
+.ld-leaving .ld-panel--l { transform: translate3d(-101%, 0, 0); }
+.ld-leaving .ld-panel--r { transform: translate3d(101%, 0, 0); }
+.ld-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.7s ease, transform 1s var(--ease); }
+.ld-leaving .ld-content { opacity: 0; transform: scale(1.18); }
+.ld-glow { position: absolute; width: 90vmin; height: 90vmin; border-radius: 50%; background: radial-gradient(circle, rgba(243, 201, 184, 0.75) 0%, rgba(240, 214, 160, 0.35) 42%, transparent 70%); opacity: 0; animation: ldGlow calc(3.4s * var(--k)) ease-out calc(1.6s * var(--k)) forwards; }
+@keyframes ldGlow { to { opacity: 1; } }
+
+.ld-stage { position: relative; width: calc(var(--r) * 2); aspect-ratio: 1; }
+.ld-svg, .ld-img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ld-path { fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 1; animation: ldDraw calc(var(--dur) * var(--k)) cubic-bezier(0.55, 0, 0.35, 1) calc(var(--del) * var(--k)) forwards, ldOut calc(0.9s * var(--k)) ease calc(4s * var(--k)) forwards; }
+@keyframes ldDraw { to { stroke-dashoffset: 0; } }
+@keyframes ldOut { to { opacity: 0; } }
+.ld-img { opacity: 0; transform: scale(0.97); object-fit: contain; animation: ldFill calc(1.1s * var(--k)) var(--ease) calc(3.8s * var(--k)) forwards; }
+@keyframes ldFill { to { opacity: 1; transform: none; } }
+
+/* Líneas doradas que entran desde los bordes de la pantalla hacia el logo */
+.ld-streaks { position: absolute; left: 50%; top: 50%; }
+.ld-streaks i { position: absolute; left: 0; top: 0; width: 130px; height: 1.5px; margin-top: -0.75px; transform-origin: 0 50%; background: linear-gradient(90deg, #b8862c, rgba(201, 152, 60, 0.55) 45%, transparent); opacity: 0; transform: rotate(var(--a)) translateX(calc(var(--r) * 4)); animation: ldStreak calc(1.7s * var(--k)) cubic-bezier(0.25, 0.7, 0.2, 1) calc(var(--j) * 0.09s * var(--k)) forwards; }
+@keyframes ldStreak { 0% { opacity: 0; transform: rotate(var(--a)) translateX(calc(var(--r) * 4)); } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--a)) translateX(calc(var(--r) * 1.04)); } }
+
+.ld-word { margin-top: 30px; font-family: var(--f-display); font-size: clamp(24px, 5vw, 34px); font-weight: 400; letter-spacing: 0.05em; color: #4a3022; text-align: center; padding-inline: 20px; opacity: 0; animation: ldUp 1s var(--ease) calc(1.2s * var(--k)) forwards; }
+.ld-line { margin-top: 8px; min-height: 22px; font-family: var(--f-display); font-style: italic; font-size: 16px; color: #c07a68; text-align: center; padding-inline: 20px; animation: ldLine 1.7s ease both; }
+.ld-bar { margin-top: 20px; width: min(56vw, 200px); height: 2px; border-radius: 2px; background: rgba(120, 80, 55, 0.14); overflow: hidden; }
+.ld-bar span { display: block; height: 100%; background: linear-gradient(90deg, #d9b35e, #b8862c); transform-origin: 0 50%; transform: scaleX(0); animation: ldBar calc(var(--k) * 5s) linear forwards; }
+@keyframes ldBar { to { transform: scaleX(1); } }
+@keyframes ldUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes ldLine { 0% { opacity: 0; transform: translateY(6px); } 20%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ld-streaks, .ld-path { display: none; }
+  .ld-img, .ld-word { animation: none; opacity: 1; transform: none; }
+  .ld-panel, .ld-content { transition: opacity 0.3s ease; }
+  .ld-leaving .ld-panel { opacity: 0; transform: none; }
+}
+
+/* Medallón café detrás del logo dorado (igual que en el menú) */
+.ld-disc { position: absolute; inset: 5%; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #4a2c20, #2c1a12 70%); opacity: 0; transform: scale(0.88); box-shadow: 0 24px 50px -18px rgba(90, 50, 30, 0.6); animation: ldFill calc(1.1s * var(--k)) var(--ease) calc(3.5s * var(--k)) forwards; }
+@media (prefers-reduced-motion: reduce) { .ld-disc { animation: none; opacity: 1; transform: none; } }
+
+.ld-leaving .ld-panel--l { box-shadow: 1px 0 0 rgba(201, 152, 84, 0.55), 10px 0 40px -8px rgba(120, 70, 45, 0.3); }
+.ld-leaving .ld-panel--r { box-shadow: -1px 0 0 rgba(201, 152, 84, 0.55), -10px 0 40px -8px rgba(120, 70, 45, 0.3); }

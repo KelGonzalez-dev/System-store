@@ -8,6 +8,28 @@ function toUrl(url) {
   return toMediaUrl(url) || '';
 }
 
+// Imagen de galería con skeleton + fade-in propio: se percibe mucho más
+// rápida aunque la imagen tarde en llegar, y evita el "salto" en blanco.
+function GalleryImg({ img, hovered, priority }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <>
+      {!loaded && <div className="img-skeleton" aria-hidden="true" />}
+      <motion.img
+        src={img.url}
+        alt={img.caption}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "low"}
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        animate={{ scale: hovered ? 1.08 : 1, opacity: loaded ? 1 : 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+      />
+    </>
+  );
+}
+
 export default function Gallery() {
   const [images, setImages]   = useState([]);   // siempre array
   const [loading, setLoading] = useState(true);
@@ -120,7 +142,7 @@ export default function Gallery() {
           </p>
           <h2 style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: "clamp(28px,4.5vw,60px)", fontWeight: 800, color: "var(--text-primary)", lineHeight: 0.95, marginBottom: 24 }}>
             Nuestras<br />
-            <span style={{ background: "linear-gradient(90deg,#B8862E 0%,#D8B16A 50%,#B8862E 100%)", backgroundSize: "200%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "shimmer 4s infinite linear" }}>
+            <span style={{ background: "linear-gradient(90deg,#BE5B2E 0%,#E0A85A 50%,#BE5B2E 100%)", backgroundSize: "200%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "shimmer 4s infinite linear" }}>
               Creaciones
             </span>
           </h2>
@@ -131,14 +153,14 @@ export default function Gallery() {
 
         {/* ── Loading ── */}
         {loading && (
-          <div style={{ textAlign: "center", padding: "60px 20px", color: "#9A8E84", fontFamily: "'Cormorant Garamond'", fontSize: 16 }}>
+          <div style={{ textAlign: "center", padding: "60px 20px", color: "#8A7A6C", fontFamily: "'Cormorant Garamond'", fontSize: 16 }}>
             Cargando galería...
           </div>
         )}
 
         {/* ── Sin imágenes ── */}
         {!loading && images.length === 0 && (
-          <p style={{ textAlign: "center", color: "#9A8E84", fontFamily: "'Cormorant Garamond'", fontSize: 16, padding: "60px 0" }}>
+          <p style={{ textAlign: "center", color: "#8A7A6C", fontFamily: "'Cormorant Garamond'", fontSize: 16, padding: "60px 0" }}>
             Aún no hay imágenes en la galería.
           </p>
         )}
@@ -178,16 +200,9 @@ export default function Gallery() {
                       transition: "box-shadow 0.4s ease",
                     }}
                   >
-                    <motion.img
-                      src={img.url}
-                      alt={img.caption}
-                      loading={i < 2 ? "eager" : "lazy"}
-                      fetchPriority={i < 2 ? "high" : "low"}
-                      decoding="async"
-                      animate={{ scale: hovered === i ? 1.08 : 1 }}
-                      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                    />
+                    <div style={{ position:"absolute", inset:0 }}>
+                      <GalleryImg img={img} hovered={hovered === i} priority={i < 2} />
+                    </div>
                     <div style={{
                       position: "absolute", inset: 0,
                       background: hovered === i
@@ -277,7 +292,7 @@ export default function Gallery() {
 
                 {images.length > 1 && (
                   <button onClick={() => setIsPlaying(value => !value)} aria-label={isPlaying ? "Pausar presentación" : "Reproducir presentación"}
-                    style={{ position: "absolute", top: 14, left: 14, zIndex: 4, padding: "10px 14px", borderRadius: 999, border: "1px solid rgba(184,134,46,0.55)", background: isPlaying ? "#B8862E" : "rgba(255,255,255,0.96)", color: isPlaying ? "#FFF" : "#6B4B1F", cursor: "pointer", font: "600 12px Inter, sans-serif", boxShadow: "0 5px 16px rgba(45,31,17,0.16)" }}>
+                    style={{ position: "absolute", top: 14, left: 14, zIndex: 4, padding: "10px 14px", borderRadius: 999, border: "1px solid rgba(184,134,46,0.55)", background: isPlaying ? "#BE5B2E" : "rgba(255,255,255,0.96)", color: isPlaying ? "#FFF" : "#5B3A22", cursor: "pointer", font: "600 12px Inter, sans-serif", boxShadow: "0 5px 16px rgba(45,31,17,0.16)" }}>
                     {isPlaying ? "Pausar" : "Reproducir"}
                   </button>
                 )}
@@ -310,7 +325,7 @@ export default function Gallery() {
               {/* Caption: siempre visible completo, sin scroll */}
               <div style={{ flex: "0 0 auto", position: "relative", padding: "14px 20px 16px", background: "#FFFFFF", borderTop: "1px solid rgba(184,134,46,0.16)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
                 <div style={{ flex: "1 1 70%", minWidth: 0 }}>
-                  <p style={{ maxWidth: "100%", overflowWrap: "anywhere", fontFamily: "'Cormorant Garamond'", fontSize: 17, color: "#3F3024", margin: 0, letterSpacing: "0.04em", lineHeight: 1.35 }}>
+                  <p style={{ maxWidth: "100%", overflowWrap: "anywhere", fontFamily: "'Cormorant Garamond'", fontSize: 17, color: "#2A1D12", margin: 0, letterSpacing: "0.04em", lineHeight: 1.35 }}>
                     {images[current].caption}
                   </p>
                   <p style={{ fontFamily: "'Cormorant Garamond'", fontSize: 13, color: "#8A7768", margin: "4px 0 0", letterSpacing: "0.12em" }}>
@@ -340,7 +355,7 @@ export default function Gallery() {
           background: rgba(255,255,255,0.35);
           backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
           border: 1.5px solid rgba(184,134,46,0.55);
-          color: #6B4B1F; display: flex; align-items: center; justify-content: center;
+          color: #5B3A22; display: flex; align-items: center; justify-content: center;
           cursor: pointer; z-index: 3; box-shadow: 0 8px 24px rgba(45,31,17,0.18);
           transition: background 0.2s ease;
         }
@@ -353,7 +368,7 @@ export default function Gallery() {
           background: rgba(255,255,255,0.55);
           backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
           border: 1.5px solid rgba(184,134,46,0.55);
-          color: #6B4B1F; display: flex; align-items: center; justify-content: center;
+          color: #5B3A22; display: flex; align-items: center; justify-content: center;
           cursor: pointer; box-shadow: 0 8px 24px rgba(45,31,17,0.18);
         }
         @media (max-width: 640px) {

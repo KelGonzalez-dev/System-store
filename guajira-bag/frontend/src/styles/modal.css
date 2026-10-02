@@ -1,0 +1,18 @@
+.modal-veil { position: fixed; inset: 0; z-index: 150; background: rgba(20, 11, 5, 0.72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.login-card { width: 100%; max-width: 400px; background: var(--paper); border-radius: 26px; padding: 38px 32px 32px; box-shadow: 0 60px 120px -30px rgba(20, 11, 5, 0.55); position: relative; }
+.login-card__close { position: absolute; top: 16px; right: 16px; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-3); transition: background-color 0.2s; }
+.login-card__close:hover { background: var(--ivory-2); }
+.login-card__mark { width: 54px; height: 54px; border-radius: 50%; margin: 0 auto 14px; }
+.login-card h2 { font-family: var(--f-display); font-size: 24px; text-align: center; color: var(--ink); }
+.login-card p.sub { text-align: center; font-size: 13px; color: var(--ink-3); margin-top: 4px; }
+.field { margin-top: 16px; }
+.field label { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 6px; }
+.field .input-row { position: relative; }
+.input {
+  width: 100%; padding: 13px 16px; border-radius: 12px; border: 1px solid var(--hair);
+  background: rgba(255, 253, 247, 0.9); font-size: 15px; color: var(--ink); transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input:focus { outline: none; border-color: var(--gold-500); box-shadow: 0 0 0 4px rgba(228, 191, 84, 0.18); }
+.field .eye { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; display: grid; place-items: center; color: var(--ink-3); }
+.form-error { margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: rgba(193, 81, 47, 0.12); color: #a6432a; font-size: 13px; text-align: center; }
+.login-card .btn { width: 100%; margin-top: 22px; }

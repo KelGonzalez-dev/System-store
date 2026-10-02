@@ -4,16 +4,30 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { WA_NUMBER, fmt } from './data';
 import { getProductos } from './api';
 import { toMediaUrl } from './config';
+import { useReveal } from './hooks/useReveal';
+
+// Redondea hacia arriba a un múltiplo "bonito" (mil/cinco mil según la
+// magnitud) para que el precio "antes" se vea natural, no calculado.
+function roundNice(n) {
+  const step = n >= 200000 ? 10000 : n >= 50000 ? 5000 : 1000;
+  return Math.ceil(n / step) * step;
+}
 
 // ─── Adaptar producto de la API al formato que usa la UI ─────
 function adaptProduct(p) {
+  const price = Number(p.precio);
+  // Precio "antes" (tachado): ~35-45% más alto que el precio real, para
+  // mostrar el precio real como una oferta y motivar la compra.
+  const bump = 1.35 + (p.id % 5) * 0.02; // pequeña variación por producto
+  const oldPrice = roundNice(price * bump);
   return {
     id:      p.id,
     codigo:  p.codigo ?? null,
     name:    p.nombre,
     desc:    p.descripcion,
     details: p.descripcionLarga || p.descripcion,
-    price:   Number(p.precio),
+    price,
+    oldPrice: oldPrice > price ? oldPrice : null,
     image:   toMediaUrl(p.imagenUrl) || '/images/bags/placeholder.jpg',
     images:  p.imagenes?.length
                ? p.imagenes.map(toMediaUrl)
@@ -31,7 +45,7 @@ const CATALOG_STYLES = `
   .search-glow { background:rgba(255,255,255,.72); border:1px solid rgba(94,67,35,.16); border-radius:10px; color:var(--text-primary); font-family:'Inter',system-ui,sans-serif; font-size:15px; outline:none; transition:border-color .18s ease,box-shadow .18s ease; }
   .search-glow::placeholder { color:rgba(26,26,26,0.42); }
   .search-glow:focus { border-color:rgba(184,134,46,0.65); box-shadow:0 0 0 4px rgba(184,134,46,.1); }
-  .btn-gold { background: linear-gradient(90deg, var(--primary), var(--secondary)); border:none; color:#071327; font-family:'Inter',system-ui,sans-serif; font-weight:700; cursor:pointer; transition:transform .18s ease,box-shadow .18s ease; border-radius:10px; padding:12px 18px; }
+  .btn-gold { background: linear-gradient(90deg, var(--primary), var(--secondary)); border:none; color:#1C140C; font-family:'Inter',system-ui,sans-serif; font-weight:700; cursor:pointer; transition:transform .18s ease,box-shadow .18s ease; border-radius:10px; padding:12px 18px; }
   .btn-gold:hover { box-shadow: 0 18px 40px rgba(184,134,46,0.12); transform:translateY(-2px); }
   .catalog-section { position:relative; z-index:1; }
   .catalog-wrap ::-webkit-scrollbar { width:6px; }
@@ -42,7 +56,7 @@ const CATALOG_STYLES = `
   .product-card-glow:hover .img-overlay-shine { opacity:1; }
   .catalog-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:24px; min-height:300px; }
   .catalog-item { content-visibility:auto; contain-intrinsic-size:420px; }
-  .catalog-card-copy { color:#3F3024; }
+  .catalog-card-copy { color:#2A1D12; }
   .catalog-card-description { color:#6B5743; }
   .product-preview-image { cursor:zoom-in; transform-origin:center; will-change:transform; }
   .product-preview-image.zoom-level-1 { transform:scale(1.5); cursor:zoom-in; }
@@ -61,18 +75,18 @@ const CATALOG_STYLES = `
   .photo-viewer-close, .photo-viewer-play { flex-shrink:0; }
   .photo-viewer-close { width:42px; height:42px; border:1px solid rgba(212,168,75,.5); border-radius:50%; background:rgba(24,19,12,.55); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 8px 22px rgba(0,0,0,.35); transition:background .2s ease, transform .2s ease; }
   .photo-viewer-close:hover { background:rgba(184,134,46,.55); }
-  .photo-viewer-play { padding:10px 16px; border:1px solid rgba(212,168,75,.5); border-radius:999px; background:rgba(24,19,12,.55); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); color:#F5D98A; font:600 12px 'Inter',system-ui,sans-serif; cursor:pointer; box-shadow:0 8px 22px rgba(0,0,0,.35); transition:background .2s ease; }
+  .photo-viewer-play { padding:10px 16px; border:1px solid rgba(212,168,75,.5); border-radius:999px; background:rgba(24,19,12,.55); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); color:#F0C878; font:600 12px 'Inter',system-ui,sans-serif; cursor:pointer; box-shadow:0 8px 22px rgba(0,0,0,.35); transition:background .2s ease; }
   .photo-viewer-play:hover { background:rgba(184,134,46,.45); }
-  .photo-viewer-arrow { position:absolute; top:50%; transform:translateY(-50%); width:52px; height:52px; border-radius:50%; background:rgba(24,19,12,.5); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1.5px solid rgba(212,168,75,.5); color:#F5D98A; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:3; box-shadow:0 8px 22px rgba(0,0,0,.35); transition:background .2s ease; }
+  .photo-viewer-arrow { position:absolute; top:50%; transform:translateY(-50%); width:52px; height:52px; border-radius:50%; background:rgba(24,19,12,.5); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1.5px solid rgba(212,168,75,.5); color:#F0C878; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:3; box-shadow:0 8px 22px rgba(0,0,0,.35); transition:background .2s ease; }
   .photo-viewer-arrow:hover { background:rgba(184,134,46,.5); }
   .photo-viewer-arrow.left { left:12px; }
   .photo-viewer-arrow.right { right:12px; }
   .photo-viewer-title { flex:0 0 auto; margin:12px 0 0; text-align:center; color:#fff; font-family:'Inter',system-ui,sans-serif; font-size:16px; font-weight:600; }
   .photo-viewer-thumbs { flex:0 0 auto; position:static; display:flex; gap:8px; max-width:100%; overflow-x:auto; padding:10px 2px 2px; margin-top:4px; }
   .photo-viewer-thumbs button { flex:0 0 54px; width:54px; height:54px; padding:0; border:2px solid transparent; border-radius:8px; overflow:hidden; background:#333; cursor:pointer; }
-  .photo-viewer-thumbs button.active { border-color:#D4A84B; }
+  .photo-viewer-thumbs button.active { border-color:#E0A85A; }
   .photo-viewer-thumbs img { width:100%; height:100%; object-fit:cover; }
-  .modal-arrow { position:absolute; top:50%; transform:translateY(-50%); width:38px; height:38px; border-radius:50%; background:rgba(24,19,12,.45); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1.5px solid rgba(212,168,75,.5); color:#F5D98A; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:3; transition:background .2s ease; }
+  .modal-arrow { position:absolute; top:50%; transform:translateY(-50%); width:38px; height:38px; border-radius:50%; background:rgba(24,19,12,.45); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1.5px solid rgba(212,168,75,.5); color:#F0C878; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:3; transition:background .2s ease; }
   .modal-arrow:hover { background:rgba(184,134,46,.5); }
   .modal-arrow.left { left:10px; }
   .modal-arrow.right { right:10px; }
@@ -102,12 +116,17 @@ const CATALOG_STYLES = `
 `;
 
 function ProductCardImage({ product, priority = false }) {
+  const [loaded, setLoaded] = useState(false);
   const images = product.images?.length ? product.images : [product.image];
 
   return (
-    <img src={images[0]} alt={product.name} loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "low"} decoding="async"
-      style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}
-    />
+    <>
+      {!loaded && <div className="img-skeleton" aria-hidden="true" />}
+      <img src={images[0]} alt={product.name} loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "low"} decoding="async"
+        onLoad={() => setLoaded(true)}
+        style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity: loaded ? 1 : 0, transition:"opacity .45s ease" }}
+      />
+    </>
   );
 }
 
@@ -227,10 +246,10 @@ function ProductModal({ product, onClose, onAdd }) {
           className="product-modal"
           style={{ background:"#FFFDF9", borderRadius:18, width:"100%", maxWidth:900, maxHeight:"92vh", overflowY:"auto", display:"grid", gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)", boxShadow:"0 30px 80px rgba(0,0,0,0.45)", border:"1px solid rgba(94,67,35,.25)", position:"relative" }}>
 
-          <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,transparent,#B8862E,#F5D98A,#B8862E,transparent)", borderRadius:"24px 24px 0 0", zIndex:10 }} />
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,transparent,#BE5B2E,#F0C878,#BE5B2E,transparent)", borderRadius:"24px 24px 0 0", zIndex:10 }} />
 
           <button className="product-modal-close" onClick={onClose} aria-label="Cerrar vista previa"
-            style={{ position:"absolute", zIndex:20, background:"rgba(184,134,46,0.92)", border:"1px solid #B8862E", borderRadius:"50%", width:38, height:38, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            style={{ position:"absolute", zIndex:20, background:"rgba(184,134,46,0.92)", border:"1px solid #BE5B2E", borderRadius:"50%", width:38, height:38, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
             <X size={16} color="#FFFFFF" />
           </button>
 
@@ -254,7 +273,7 @@ function ProductModal({ product, onClose, onAdd }) {
               <div className="product-modal-thumbs" style={{ display:"flex", gap:8, padding:"12px 14px", overflowX:"auto", background:"#F1E9DD" }}>
                 {images.map((img, i) => (
                     <motion.button key={i} onClick={() => changeImage(i)} whileHover={{ scale:1.05 }}
-                    style={{ flexShrink:0, width:54, height:54, borderRadius:10, overflow:"hidden", border: imgIdx===i ? "2px solid #B8862E":"2px solid rgba(184,134,46,0.15)", cursor:"pointer", padding:0, background:"none" }}>
+                    style={{ flexShrink:0, width:54, height:54, borderRadius:10, overflow:"hidden", border: imgIdx===i ? "2px solid #BE5B2E":"2px solid rgba(184,134,46,0.15)", cursor:"pointer", padding:0, background:"none" }}>
                     <img src={img} loading="lazy" decoding="async" alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                   </motion.button>
                 ))}
@@ -263,20 +282,30 @@ function ProductModal({ product, onClose, onAdd }) {
           </div>
 
           {/* Info derecha */}
-          <div className="product-modal-info" style={{ padding:"48px 36px 36px", display:"flex", flexDirection:"column", justifyContent:"space-between", color:"#3F3024" }}>
+          <div className="product-modal-info" style={{ padding:"48px 36px 36px", display:"flex", flexDirection:"column", justifyContent:"space-between", color:"#2A1D12" }}>
             <div>
               <div className="tag-badge" style={{ marginBottom:16 }}>✦ Artesanía Wayuu</div>
               {product.codigo && <div style={{ fontSize:12, color:"rgba(245,232,200,0.5)", marginBottom:10 }}>Código: {product.codigo}</div>}
               <h2 style={{ fontFamily:"'Inter', system-ui, sans-serif", fontSize:"clamp(18px,2.2vw,26px)", fontWeight:700, color:"#2E2117", lineHeight:1.2, marginBottom:16 }}>{product.name}</h2>
-              <div style={{ display:"inline-block", fontFamily:"'Bebas Neue',cursive", fontSize:36, letterSpacing:"0.04em", marginBottom:20, padding:"8px 20px", background:"linear-gradient(135deg,rgba(184,134,46,0.15),rgba(184,134,46,0.05))", borderRadius:12, border:"1px solid rgba(184,134,46,0.3)", color:"#D4A84B" }}>
-                {fmt(product.price)}
+              <div style={{ display:"flex", alignItems:"baseline", gap:12, flexWrap:"wrap", marginBottom:20 }}>
+                {product.oldPrice && (
+                  <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:18, color:"#9c8a76", textDecoration:"line-through" }}>{fmt(product.oldPrice)}</span>
+                )}
+                <div style={{ display:"inline-block", fontFamily:"'Bebas Neue',cursive", fontSize:36, letterSpacing:"0.04em", padding:"8px 20px", background:"linear-gradient(135deg,rgba(184,134,46,0.15),rgba(184,134,46,0.05))", borderRadius:12, border:"1px solid rgba(184,134,46,0.3)", color:"#E0A85A" }}>
+                  {fmt(product.price)}
+                </div>
+                {product.oldPrice && (
+                  <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, fontWeight:800, letterSpacing:"0.04em", color:"#fff", background:"linear-gradient(135deg,#C1512F,#8C3E1E)", padding:"5px 10px", borderRadius:999 }}>
+                    -{Math.round((1 - product.price / product.oldPrice) * 100)}%
+                  </span>
+                )}
               </div>
               <p style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:16, fontWeight:500, color:"#6B5743", lineHeight:1.65, marginBottom:28 }}>{product.details}</p>
               <div style={{ height:1, background:"linear-gradient(90deg,rgba(184,134,46,0.3),transparent)", marginBottom:28 }} />
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
               <motion.button whileTap={{ scale:0.97 }} whileHover={{ scale:1.02 }} onClick={handleAdd} className="btn-gold"
-                style={{ width:"100%", padding:"15px", background: added ? "linear-gradient(135deg,#2E7D32,#4CAF50)":"linear-gradient(135deg,#B8862E 0%,#D4A84B 50%,#B8862E 100%)", backgroundSize:"200% auto", color: added ? "#fff":"#0D0A06", border:"none", borderRadius:12, fontFamily:"'Cormorant Garamond',serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                style={{ width:"100%", padding:"15px", background: added ? "linear-gradient(135deg,#2E7D32,#4CAF50)":"linear-gradient(135deg,#BE5B2E 0%,#E0A85A 50%,#BE5B2E 100%)", backgroundSize:"200% auto", color: added ? "#fff":"#1C140C", border:"none", borderRadius:12, fontFamily:"'Cormorant Garamond',serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                 <ShoppingCart size={16} />
                 {added ? "¡Agregado al carrito!" : "Agregar al carrito"}
               </motion.button>
@@ -296,6 +325,50 @@ function ProductModal({ product, onClose, onAdd }) {
       </motion.div>
       {photoViewerOpen && <ProductPhotoViewer product={product} images={images} initialIndex={imgIdx} onClose={() => setPhotoViewerOpen(false)} />}
     </AnimatePresence>
+  );
+}
+
+// ─── Tarjeta de producto (con scroll-reveal propio, barato) ───────────────
+function CatalogCard({ item, idx, page, onSelect }) {
+  const ref = useReveal({ index: idx % 8 });
+  const discountPct = item.oldPrice ? Math.round((1 - item.price / item.oldPrice) * 100) : 0;
+  return (
+    <div ref={ref} className="catalog-item reveal reveal-scale reveal-stagger">
+      <div onClick={() => onSelect(item)}>
+        <div className="product-card-glow" style={{ height:"100%" }}>
+          <div style={{ position:"relative", width:"100%", paddingBottom:"100%", overflow:"hidden", borderRadius:"20px 20px 0 0" }}>
+            <ProductCardImage product={item} priority={idx < 4} />
+            <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,transparent 40%,rgba(13,10,6,0.7) 100%)" }} />
+            <div className="img-overlay-shine" />
+            <div style={{ position:"absolute", top:12, right:12, background:"rgba(255,253,249,0.9)", border:"1px solid rgba(184,134,46,0.3)", borderRadius:"50%", width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", color:"#A34A22", fontSize:10, fontFamily:"'Bebas Neue'" }}>
+              {String(idx + 1 + (page - 1) * PAGE_SIZE).padStart(2, "0")}
+            </div>
+            {item.oldPrice && (
+              <div style={{ position:"absolute", top:12, left:12, background:"linear-gradient(135deg,#C1512F,#8C3E1E)", color:"#fff", borderRadius:999, padding:"5px 11px", fontSize:11, fontWeight:800, letterSpacing:"0.03em", boxShadow:"0 6px 16px rgba(140,62,30,0.35)" }}>
+                -{discountPct}%
+              </div>
+            )}
+          </div>
+          <div className="catalog-card-copy" style={{ padding:"20px 20px 22px", position:"relative", zIndex:1 }}>
+            <h3 style={{ fontFamily:"'Inter', system-ui, sans-serif", fontSize:15, fontWeight:700, marginBottom:6, lineHeight:1.3 }}>{item.name}</h3>
+            <p className="catalog-card-description" style={{ fontSize:13, marginBottom:16, lineHeight:1.6, fontFamily:"'Inter', system-ui, sans-serif", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{item.desc}</p>
+            <div style={{ height:1, background:"linear-gradient(90deg,rgba(184,134,46,0.4),transparent)", marginBottom:14 }} />
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end" }}>
+              <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+                {item.oldPrice && (
+                  <span style={{ fontFamily:"'Inter', system-ui, sans-serif", fontSize:12, color:"#9c8a76", textDecoration:"line-through" }}>{fmt(item.oldPrice)}</span>
+                )}
+                <span className="catalog-card-price" style={{ fontFamily:"'Inter', system-ui, sans-serif", fontSize:20, fontWeight:800, color:"#A34A22", letterSpacing:"0.02em" }}>{fmt(item.price)}</span>
+              </div>
+              <button className="catalog-card-button" onClick={e=>{e.stopPropagation();onSelect(item);}}
+                style={{ padding:"8px 16px", background:"linear-gradient(90deg,var(--primary),var(--secondary))", color:"#1C140C", border:"none", borderRadius:8, fontFamily:"'Inter', system-ui, sans-serif", fontSize:12, fontWeight:700, cursor:"pointer", letterSpacing:"0.04em", textTransform:"uppercase" }}>
+                Ver detalle
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -402,39 +475,14 @@ export default function Catalog({ cart, onAdd }) {
           ) : (
             <>
               <AnimatePresence mode="wait">
-                <div key={`${page}-${search}`} className="catalog-grid">
+                <div key={`${page}-${search}`} className="catalog-grid reveal-stage">
                   {items.length === 0 ? (
                     <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }}
                       style={{ gridColumn:"1/-1", textAlign:"center", padding:"80px 20px", color:"rgba(245,232,200,0.4)", fontFamily:"'Cormorant Garamond'", fontSize:18, fontStyle:"italic" }}>
                       No encontramos mochilas con ese criterio.
                     </motion.div>
                   ) : items.map((item, idx) => (
-                    <div className="catalog-item" key={item.id}>
-                      <div onClick={() => setSelectedProduct(item)}>
-                        <div className="product-card-glow" style={{ height:"100%" }}>
-                          <div style={{ position:"relative", width:"100%", paddingBottom:"100%", overflow:"hidden", borderRadius:"20px 20px 0 0" }}>
-                            <ProductCardImage product={item} priority={idx < 4} />
-                            <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,transparent 40%,rgba(13,10,6,0.7) 100%)" }} />
-                            <div className="img-overlay-shine" />
-                            <div style={{ position:"absolute", top:12, right:12, background:"rgba(255,253,249,0.9)", border:"1px solid rgba(184,134,46,0.3)", borderRadius:"50%", width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", color:"#966719", fontSize:10, fontFamily:"'Bebas Neue'" }}>
-                              {String(idx + 1 + (page - 1) * PAGE_SIZE).padStart(2, "0")}
-                            </div>
-                          </div>
-                          <div className="catalog-card-copy" style={{ padding:"20px 20px 22px", position:"relative", zIndex:1 }}>
-                            <h3 style={{ fontFamily:"'Inter', system-ui, sans-serif", fontSize:15, fontWeight:700, marginBottom:6, lineHeight:1.3 }}>{item.name}</h3>
-                            <p className="catalog-card-description" style={{ fontSize:13, marginBottom:16, lineHeight:1.6, fontFamily:"'Inter', system-ui, sans-serif", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{item.desc}</p>
-                            <div style={{ height:1, background:"linear-gradient(90deg,rgba(184,134,46,0.4),transparent)", marginBottom:14 }} />
-                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                              <span className="catalog-card-price" style={{ fontFamily:"'Inter', system-ui, sans-serif", fontSize:20, fontWeight:800, color:"#966719", letterSpacing:"0.02em" }}>{fmt(item.price)}</span>
-                              <button className="catalog-card-button" onClick={e=>{e.stopPropagation();setSelectedProduct(item);}}
-                                style={{ padding:"8px 16px", background:"linear-gradient(90deg,var(--primary),var(--secondary))", color:"#071327", border:"none", borderRadius:8, fontFamily:"'Inter', system-ui, sans-serif", fontSize:12, fontWeight:700, cursor:"pointer", letterSpacing:"0.04em", textTransform:"uppercase" }}>
-                                Ver detalle
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <CatalogCard key={item.id} item={item} idx={idx} page={page} onSelect={setSelectedProduct} />
                   ))}
                 </div>
               </AnimatePresence>
@@ -455,7 +503,7 @@ export default function Catalog({ cart, onAdd }) {
                     if (!show) return null;
                     return (
                       <motion.button key={p} onClick={() => goToPage(p)} whileHover={{ scale:1.1 }} whileTap={{ scale:0.95 }}
-                        style={{ width:42, height:42, borderRadius:12, border:p===page?"1.5px solid #B8862E":"1px solid rgba(184,134,46,0.15)", background:p===page?"linear-gradient(135deg,#B8862E,#D4A84B)":"rgba(184,134,46,0.06)", color:p===page?"#0D0A06":"rgba(245,232,200,0.6)", fontFamily:"'Cormorant Garamond'", fontSize:15, fontWeight:p===page?700:400, cursor:"pointer" }}>
+                        style={{ width:42, height:42, borderRadius:12, border:p===page?"1.5px solid #BE5B2E":"1px solid rgba(184,134,46,0.15)", background:p===page?"linear-gradient(135deg,#BE5B2E,#E0A85A)":"rgba(184,134,46,0.06)", color:p===page?"#1C140C":"rgba(245,232,200,0.6)", fontFamily:"'Cormorant Garamond'", fontSize:15, fontWeight:p===page?700:400, cursor:"pointer" }}>
                         {p}
                       </motion.button>
                     );
