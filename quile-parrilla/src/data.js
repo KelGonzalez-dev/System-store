@@ -26,9 +26,15 @@ export const L = {
   interior: '/images/local/interior.jpg',
   parrillero: '/images/local/parrillero.jpg',
   logo: '/images/local/logo-blanco.jpg',
+  coctel: '/images/local/coctel-azul.jpg',
+  limonada: '/images/local/limonada-quile.jpg',
+  fajita: '/images/local/fajita.jpg',
 };
 
-export const CATS = ['parrilla', 'compartir', 'salchipapas', 'hamburguesas', 'mazorcadas', 'entradas', 'bebidas'];
+export const CATS = ['parrilla', 'compartir', 'salchipapas', 'hamburguesas', 'sandwiches', 'perros', 'fajitas', 'mazorcadas', 'entradas', 'cocteles', 'bebidas'];
+
+// Categorías que se muestran como lista compacta (nombre y precio), con una foto grande de la categoría
+export const COMPACT = { bebidas: L.limonada };
 
 // f: c = favorito, s = picante · p = personas (para compartir)
 const M = (id, cat, img, n, d, price, f = '', p = 0) => ({ id, cat, img, n, d, price, fav: f.includes('c'), hot: f.includes('s'), people: p });
@@ -99,15 +105,60 @@ export const MENU = [
   M(26, 'entradas', '1573080496219-bb080dd4f877', ['Papas a la francesa', 'French fries'],
     ['Porción crocante con salsas de la casa', 'Crispy portion with house sauces'], 9000),
 
-  // ---------- Bebidas
-  M(27, 'bebidas', '1600271886742-f049cd451bba', ['Limonada de coco', 'Coconut lemonade'],
-    ['Cremosa y bien fría', 'Creamy and ice cold'], 12000, 'c'),
-  M(28, 'bebidas', '1556679343-c7306c1976bc', ['Limonada natural', 'Fresh lemonade'],
-    ['Clásica o de hierbabuena', 'Classic or mint'], 8000),
-  M(29, 'bebidas', '1535958636474-b021ee887b13', ['Cerveza nacional', 'Local beer'],
-    ['Bien fría', 'Ice cold'], 6000),
-  M(30, 'bebidas', L.vino, ['Copa de vino', 'Glass of wine'],
-    ['Tinto de la casa', 'House red'], 18000),
+  // ---------- Sándwiches cubanos (carta real)
+  M(31, 'sandwiches', '1528735602780-2552fd46c7af', S('Cubano ejecutivo'), ['Sándwich cubano clásico de la casa', 'Classic house Cuban sandwich'], 20000),
+  M(32, 'sandwiches', '1553909489-cd47e0907980', ['Cubano de pollo', 'Chicken Cuban sandwich'], ['Con pollo a la parrilla, queso y salsas', 'With grilled chicken, cheese and sauces'], 32000),
+  M(33, 'sandwiches', '1539252554453-80ab65ce3586', ['Cubano suizo ranchero', 'Swiss ranch Cuban sandwich'], ['Con salchicha suiza ranchera, queso y salsas', 'With Swiss ranch sausage, cheese and sauces'], 32000),
+  M(34, 'sandwiches', '1550507992-eb63ffee0847', ['Cubano al Quile', 'Quile Cuban sandwich'], ['El cubano de la casa, con todo', 'The house Cuban sandwich, fully loaded'], 36000, 'c'),
+
+  // ---------- Perros calientes (carta real)
+  M(35, 'perros', '1612392062631-94dd858cba88', ['Perro argentino', 'Argentine hot dog'], ['Con chorizo y chimichurri', 'With chorizo and chimichurri'], 22000),
+  M(36, 'perros', '1619740455993-9e612b1af08a', ['Perro hawaiano', 'Hawaiian hot dog'], ['Con piña, jamón y queso', 'With pineapple, ham and cheese'], 23000),
+  M(37, 'perros', '1612392166886-ee8475b03af2', ['Perro sinvergüenza', 'Sinvergüenza hot dog'], ['El atrevido de la casa', 'The cheeky one of the house'], 23000),
+  M(38, 'perros', '1613454320437-0c228c8b1723', ['Perro suizo', 'Swiss hot dog'], ['Con salchicha suiza y queso', 'With Swiss sausage and cheese'], 26000),
+  M(39, 'perros', '1599599810694-b5b37304c041', ['Perro Quiloco', 'Quiloco hot dog'], ['Cargado al estilo Quile', 'Loaded Quile style'], 38000, 'c'),
+  M(40, 'perros', '1541214113241-21578d2d9b62', ['Perro Bin Bang', 'Bin Bang hot dog'], ['El más grande de la casa', 'The biggest one in the house'], 42000),
+
+  // ---------- Fajitas quileñas (carta real)
+  M(41, 'fajitas', L.fajita, ['Fajita de carne o pollo', 'Beef or chicken fajita'], ['Bañada en salsa de queso, cheddar y tocineta', 'Topped with cheese sauce, cheddar and bacon'], 32000, 'c'),
+  M(42, 'fajitas', L.fajita, ['Fajita mixta', 'Mixed fajita'], ['Carne y pollo con salsa de queso, cheddar y tocineta', 'Beef and chicken with cheese sauce, cheddar and bacon'], 34000),
+
+  // ---------- Quile cócteles (carta real)
+  M(43, 'cocteles', '1556679343-c7306c1976bc', S('Soda italiana'), ['Refrescante y burbujeante', 'Refreshing and bubbly'], 15000),
+  M(44, 'cocteles', '1600271886742-f049cd451bba', S('Michelada tropical Hatsu'), ['Michelada con té Hatsu y frutas', 'Michelada with Hatsu tea and fruits'], 15000),
+  M(45, 'cocteles', '1551538827-9c037cb4f32a', ['Mojito paisa o ruso', 'Paisa or Russian mojito'], ['Hierbabuena, limón y tu licor favorito', 'Mint, lime and your favorite spirit'], 20000, 'c'),
+  M(46, 'cocteles', '1514362545857-3bc16c4c7d1b', S('Riohacha Sunrise'), ['El atardecer guajiro en una copa', 'The Guajira sunset in a glass'], 20000, 'c'),
+  M(47, 'cocteles', '1575023782549-62ca0d244b39', S('Martini mexicano'), ['Con tequila y limón', 'With tequila and lime'], 20000),
+  M(48, 'cocteles', L.coctel, S('Ocean Blue Margarita'), ['Margarita azul con borde de sal y cereza', 'Blue margarita with salted rim and cherry'], 20000, 'c'),
+  M(49, 'cocteles', '1536935338788-846bb9981813', ['Verano rojo', 'Red summer'], ['Frutos rojos y mucho hielo', 'Red berries and plenty of ice'], 20000),
+  M(50, 'cocteles', '1587223962930-cb7f31384c19', ['Piña colada', 'Piña colada'], ['Piña, coco y ron', 'Pineapple, coconut and rum'], 20000),
+  M(51, 'cocteles', '1497534446932-c925b458314e', ['Sueño rosa', 'Pink dream'], ['Dulce, suave y rosado', 'Sweet, smooth and pink'], 20000),
+
+  // ---------- Bebidas (carta real)
+  M(52, 'bebidas', '1509042239860-f550ce710b93', ['Café pequeño', 'Small coffee'], ['Tinto o con leche', 'Black or with milk'], 3000),
+  M(53, 'bebidas', '1600271886742-f049cd451bba', ['Jugos naturales', 'Fresh juices'], ['Mora, fresa, maracuyá, lulo, tomate, corozo, mango, tamarindo, guanábana o naranja', 'Blackberry, strawberry, passion fruit, lulo, tree tomato, corozo, mango, tamarind, soursop or orange'], 15000, 'c'),
+  M(54, 'bebidas', '1600271886742-f049cd451bba', ['Jugos combinados', 'Mixed juices'], ['Fresa-cereza, fresa-guanábana, maracumango, cereza-mandarina o maracuyá-hierbabuena', 'Strawberry-cherry, strawberry-soursop, passion-mango, cherry-tangerine or passion-mint'], 16000),
+  M(55, 'bebidas', L.limonada, ['Limonada natural', 'Fresh lemonade'], ['Clásica y bien fría', 'Classic and ice cold'], 14000),
+  M(56, 'bebidas', L.limonada, ['Limonada suiza', 'Swiss lemonade'], ['Cremosa, con leche condensada', 'Creamy, with condensed milk'], 16000),
+  M(57, 'bebidas', L.limonada, ['Limonada de hierbabuena', 'Mint lemonade'], ['Con hierbabuena fresca', 'With fresh mint'], 15000),
+  M(58, 'bebidas', L.coctel, ['Limonada cerezada', 'Cherry lemonade'], ['Roja, verde o azul', 'Red, green or blue'], 16000),
+  M(59, 'bebidas', '1600271886742-f049cd451bba', ['Mandarina', 'Tangerine'], ['Jugo de mandarina', 'Tangerine juice'], 16000),
+  M(60, 'bebidas', '1556679343-c7306c1976bc', ['Bretaña panelada', 'Bretaña with panela'], ['Soda Bretaña con panela y limón', 'Bretaña soda with panela and lime'], 16000),
+  M(61, 'bebidas', L.limonada, ['Limonada de coco', 'Coconut lemonade'], ['Cremosa y bien fría', 'Creamy and ice cold'], 17000, 'c'),
+  M(62, 'bebidas', L.vino, ['Limonada de vino', 'Wine lemonade'], ['Limonada con vino tinto', 'Lemonade with red wine'], 18000),
+  M(63, 'bebidas', '1554866585-cd94860890b7', ['Postobón 350 ml', 'Postobón 350 ml'], ['Gaseosa', 'Soda'], 6000),
+  M(64, 'bebidas', '1554866585-cd94860890b7', ['Bretaña', 'Bretaña'], ['Soda', 'Club soda'], 6000),
+  M(65, 'bebidas', '1554866585-cd94860890b7', ['Coca-Cola Zero 350', 'Coca-Cola Zero 350'], ['Gaseosa', 'Soda'], 7000),
+  M(66, 'bebidas', '1556679343-c7306c1976bc', ['Té Hatsu', 'Hatsu tea'], ['Té frío', 'Iced tea'], 6000),
+  M(67, 'bebidas', '1554866585-cd94860890b7', ['Gatorade', 'Gatorade'], ['Bebida hidratante', 'Sports drink'], 8000),
+  M(68, 'bebidas', '1548839140-29a749e1cf4d', ['Botella de agua', 'Bottled water'], ['Agua', 'Water'], 5000),
+  M(69, 'bebidas', '1535958636474-b021ee887b13', ['Cerveza Coronita', 'Coronita beer'], ['Bien fría', 'Ice cold'], 8000),
+  M(70, 'bebidas', '1535958636474-b021ee887b13', ['Club Colombia', 'Club Colombia'], ['Cerveza', 'Beer'], 10000),
+  M(71, 'bebidas', '1535958636474-b021ee887b13', ['Heineken', 'Heineken'], ['Cerveza', 'Beer'], 8000),
+  M(72, 'bebidas', '1535958636474-b021ee887b13', ['Poker', 'Poker'], ['Cerveza', 'Beer'], 8000),
+  M(73, 'bebidas', '1535958636474-b021ee887b13', ['Águila original', 'Águila original'], ['Cerveza', 'Beer'], 8000),
+  M(74, 'bebidas', '1514362545857-3bc16c4c7d1b', ['Adición michelada', 'Michelada add-on'], ['Prepara tu cerveza como michelada', 'Turn your beer into a michelada'], 3000),
+  M(75, 'bebidas', L.vino, ['Botella de vino', 'Bottle of wine'], ['Vino de la casa', 'House wine'], 70000),
 ];
 
 // Los 3 platos para compartir (sección destacada)
@@ -119,4 +170,21 @@ export const SIZES = [
 ];
 
 // Mosaico tipo Instagram
-export const FEED = [L.espada, L.salchiquiloca, L.ambiente, L.mazorcada, L.costillas, L.nachos, L.pincho, L.gratinada, L.vino, L.carne, L.parrillero, L.salchipapa2];
+// Galería 3D (fotos reales de Quile). caption: [es, en]
+export const GALLERY = [
+  { src: L.espada, c: ['Espada Quile', 'Quile skewer'] },
+  { src: L.coctel, c: ['Ocean Blue Margarita', 'Ocean Blue Margarita'] },
+  { src: L.interior, c: ['Nuestro salón', 'Our dining room'] },
+  { src: L.salchiquiloca, c: ['Salchiquiloca', 'Salchiquiloca'] },
+  { src: L.limonada, c: ['Limonada Quile', 'Quile lemonade'] },
+  { src: L.costillas, c: ['Al carbón', 'Charcoal grilled'] },
+  { src: L.ambiente, c: ['El ambiente', 'The vibe'] },
+  { src: L.fajita, c: ['Fajitas quileñas', 'Quile fajitas'] },
+  { src: L.mazorcada, c: ['Mazorcada', 'Mazorcada'] },
+  { src: L.pincho, c: ['Directo de la brasa', 'Straight from the grill'] },
+  { src: L.nachos, c: ['Nachos Quile', 'Quile nachos'] },
+  { src: L.parrillero, c: ['Servido en la mesa', 'Served at your table'] },
+  { src: L.gratinada, c: ['Salchipapa gratinada', 'Gratinated salchipapa'] },
+  { src: L.vino, c: ['Una copa de vino', 'A glass of wine'] },
+  { src: L.carne, c: ['Punta de anca', 'Picanha'] },
+];

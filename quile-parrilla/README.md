@@ -12,12 +12,14 @@ React 18 + Vite + Tailwind. Dos páginas: `index.html` (inicio) y `carta.html` (
 | Qué | Dónde |
 | --- | --- |
 | Platos, precios, fotos de la carta (ES/EN) | `src/data.js` → `MENU` |
+| Fotos y textos de la galería | `src/data.js` → `GALLERY` |
 | Los 3 platos para compartir | `src/data.js` → `SHARE_IDS` |
 | Tamaños del selector de salchipapa | `src/data.js` → `SIZES` |
 | WhatsApp, Instagram, dirección | `src/i18n.jsx` (arriba) |
 | Textos (español / inglés) | `src/i18n.jsx` → `DICT` |
 
-Los precios son de REFERENCIA: reemplázalos por los reales.
+Sándwiches cubanos, perros calientes, fajitas, cócteles y bebidas tienen los precios REALES de su carta.
+Parrilla, salchipapas, hamburguesas, mazorcadas y entradas tienen precios de REFERENCIA: reemplázalos por los reales.
 
 ## Fotos
 `public/images/local/` tiene fotos reales de su Instagram y Google (baja resolución).
@@ -31,4 +33,6 @@ para usar una foto propia, ponla en `public/images/local/` y cambia el id por la
 - `lib/embers.js` — brasas en canvas (se pausan solas fuera de pantalla).
 - `components/Share.jsx` — 3 platos para compartir + selector "¿Cuántos son en la mesa?".
 - `components/Menu.jsx`, `CartaPage.jsx` — carta con foto de cada plato y botón de pedido por WhatsApp.
+- `components/Gallery.jsx` — galería 3D tipo coverflow: avanza con el scroll, se arrastra con el dedo o el mouse y abre un visor a pantalla completa.
+- Animaciones 3D al hacer scroll (`lib/scroll.js`): un solo ciclo de animación, solo transform/opacity, se apagan fuera de pantalla y con "reducir movimiento".
 - `components/Visit.jsx` — dirección, mapa (carga al tocarlo), reserva por WhatsApp, footer.

@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Img from './Img';
-import { CATS, MENU } from '../data';
+import { CATS, COMPACT, MENU } from '../data';
+import { useInView } from '../lib/scroll';
 import { useI18n, wa } from '../i18n';
 
 export function useMoney() {
@@ -32,10 +33,46 @@ export function DishCard({ m, i = 0 }) {
   );
 }
 
+// Lista compacta (bebidas): nombre, detalle y precio, con foto grande de la categoría
+export function DrinkList({ cat, items }) {
+  const { t, pick } = useI18n();
+  const fmt = useMoney();
+  return (
+    <div className="drinks">
+      <div className="drinks-photo"><Img id={COMPACT[cat]} alt={t.menu.cats[cat]} w={700} className="h-full w-full" /></div>
+      <ul className="drinks-list">
+        {items.map((m, i) => (
+          <li key={m.id} className="drink" style={{ '--k': i }}>
+            <div className="dish-top">
+              <h3>{pick(m.n)}{m.fav && <span className="drink-fav" aria-label={t.menu.fav}>★</span>}</h3>
+              <span className="dish-dots" aria-hidden="true" />
+              <b>{fmt.format(m.price)}</b>
+            </div>
+            {pick(m.d) && <p>{pick(m.d)}</p>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// Grilla de platos con entrada 3D cuando aparece en pantalla
+export function DishGrid({ items, cat }) {
+  const ref = useRef(null);
+  const seen = useInView(ref);
+  return (
+    <div ref={ref} className={`menu-3d ${seen ? 'in' : ''}`}>
+      {COMPACT[cat] ? <DrinkList cat={cat} items={items} /> : (
+        <div className="menu-grid">{items.map((m, i) => <DishCard key={m.id} m={m} i={i} />)}</div>
+      )}
+    </div>
+  );
+}
+
 export default function Menu() {
   const { t } = useI18n();
   const [cat, setCat] = useState('parrilla');
-  const items = MENU.filter((m) => m.cat === cat).slice(0, 6);
+  const items = MENU.filter((m) => m.cat === cat).slice(0, COMPACT[cat] ? 12 : 6);
   return (
     <section id="carta" className="menu-sec relative overflow-hidden">
       <div className="wrap py-[clamp(80px,10vw,130px)]">
@@ -51,9 +88,7 @@ export default function Menu() {
             <button key={c} type="button" role="tab" aria-selected={cat === c} className={cat === c ? 'on' : ''} onClick={() => setCat(c)}>{t.menu.cats[c]}</button>
           ))}
         </div>
-        <div key={cat} className="menu-grid">
-          {items.map((m, i) => <DishCard key={m.id} m={m} i={i} />)}
-        </div>
+        <div className="mt-7"><DishGrid key={cat} items={items} cat={cat} /></div>
         <div className="mt-12 flex justify-center">
           <a href="./carta.html" target="_blank" rel="noopener" className="btn btn-blue">
             {t.menu.full}

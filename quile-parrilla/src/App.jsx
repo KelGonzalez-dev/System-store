@@ -6,7 +6,7 @@ import Tape from './components/Tape';
 import Share from './components/Share';
 import Place from './components/Place';
 import Menu from './components/Menu';
-import Insta from './components/Insta';
+import Gallery from './components/Gallery';
 import LangSwitch from './components/LangSwitch';
 import { FloatWA, Footer, Visit } from './components/Visit';
 import { useI18n } from './i18n';
@@ -49,7 +49,7 @@ export default function App() {
         <Share />
         <Place />
         <Menu />
-        <Insta />
+        <Gallery />
         <Visit />
       </main>
       <Footer />

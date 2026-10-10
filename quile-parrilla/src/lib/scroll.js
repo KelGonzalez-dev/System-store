@@ -3,7 +3,7 @@
 // sin lecturas de layout dentro del bucle (solo escribe transforms).
 // Así las animaciones 3D van fluidas en móvil y escritorio.
 // ============================================================
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const subs = new Set();
 const state = { y: 0, vh: typeof window !== 'undefined' ? window.innerHeight : 800, vw: typeof window !== 'undefined' ? window.innerWidth : 1200 };
@@ -91,4 +91,44 @@ let locks = 0;
 export function lockScroll(on) {
   locks = Math.max(0, locks + (on ? 1 : -1));
   document.body.classList.toggle('lock', locks > 0);
+}
+
+// Marca un elemento como visible una sola vez (para animaciones de entrada que no deben repetirse)
+export function useInView(ref, options = { rootMargin: '0px 0px -12% 0px' }) {
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || seen) return undefined;
+    if (!('IntersectionObserver' in window)) { setSeen(true); return undefined; }
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setSeen(true); io.disconnect(); } }, options);
+    io.observe(el);
+    return () => io.disconnect();
+  }, [seen]);
+  return seen;
+}
+
+// Inclinación 3D con el mouse (solo computador). Escribe --rx, --ry, --gx, --gy en el elemento.
+export function useTilt(ref, max = 10) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || reducedMotion() || !window.matchMedia('(pointer: fine)').matches) return undefined;
+    let raf = 0, tx = 0, ty = 0, cx = 0, cy = 0, gx = 50, gy = 50;
+    const tick = () => {
+      cx += (tx - cx) * 0.15; cy += (ty - cy) * 0.15;
+      el.style.setProperty('--rx', `${(-cy * max).toFixed(2)}deg`);
+      el.style.setProperty('--ry', `${(cx * max).toFixed(2)}deg`);
+      el.style.setProperty('--gx', `${gx}%`); el.style.setProperty('--gy', `${gy}%`);
+      raf = Math.abs(tx - cx) + Math.abs(ty - cy) > 0.002 ? requestAnimationFrame(tick) : 0;
+    };
+    const move = (e) => {
+      const r = el.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      tx = x * 2 - 1; ty = y * 2 - 1; gx = Math.round(x * 100); gy = Math.round(y * 100);
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+    const leave = () => { tx = 0; ty = 0; if (!raf) raf = requestAnimationFrame(tick); };
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerleave', leave);
+    return () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerleave', leave); cancelAnimationFrame(raf); };
+  }, [max]);
 }

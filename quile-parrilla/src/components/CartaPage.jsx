@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { QuileLogo } from './Brand';
 import { LangToggle, WaIcon } from './Nav';
 import LangSwitch from './LangSwitch';
-import { DishCard } from './Menu';
+import { DishGrid } from './Menu';
 import { FloatWA, Footer } from './Visit';
 import { Embers } from './Hero';
 import { CATS, MENU } from '../data';
@@ -61,9 +61,7 @@ export default function CartaPage() {
         {CATS.map((c) => (
           <section key={c} id={`cat-${c}`} data-cat={c} className="wrap cat-sec">
             <h2 className="cat-title"><span>{t.menu.cats[c]}</span></h2>
-            <div className="menu-grid">
-              {MENU.filter((m) => m.cat === c).map((m, i) => <DishCard key={m.id} m={m} i={i} />)}
-            </div>
+            <DishGrid items={MENU.filter((m) => m.cat === c)} cat={c} />
           </section>
         ))}
         <p className="wrap mt-14 text-[13.5px] text-madera/60">{t.menu.note}</p>
