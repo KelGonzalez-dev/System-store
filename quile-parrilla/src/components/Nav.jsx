@@ -28,7 +28,7 @@ export default function Nav() {
     return () => window.removeEventListener('scroll', f);
   }, []);
   useEffect(() => { if (!open) return undefined; lockScroll(true); return () => lockScroll(false); }, [open]);
-  const links = [['#compartir', t.nav.share], ['#carta', t.nav.menu], ['#lugar', t.nav.place], ['#visitanos', t.nav.visit]];
+  const links = [['#compartir', t.nav.share], ['#carta', t.nav.menu], ['#lugar', t.nav.place], ['#galeria', t.nav.gallery], ['#visitanos', t.nav.visit]];
   const go = (e, h) => { e.preventDefault(); setOpen(false); scrollToTarget(h); };
   return (
     <>

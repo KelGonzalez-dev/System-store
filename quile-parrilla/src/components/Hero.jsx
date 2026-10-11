@@ -4,7 +4,7 @@ import { WaIcon } from './Nav';
 import { L } from '../data';
 import { useI18n, wa } from '../i18n';
 import { createEmbers, autoPause } from '../lib/embers';
-import { reducedMotion, scrollToTarget } from '../lib/scroll';
+import { clamp, reducedMotion, scrollToTarget, useScrollFrame } from '../lib/scroll';
 
 function Embers({ count = 70 }) {
   const ref = useRef(null);
@@ -46,12 +46,23 @@ function Stage({ chip }) {
 
 export default function Hero() {
   const { t, lang } = useI18n();
+  const sec = useRef(null);
+  const copy = useRef(null);
+  const stage3d = useRef(null);
+  // Al bajar, la escena se inclina hacia atrás en 3D y el texto se aleja (efecto de profundidad)
+  useScrollFrame(sec, (p, st) => {
+    if (reducedMotion() || !copy.current) return;
+    const k = clamp(st.y / Math.max(1, st.vh));
+    copy.current.style.transform = `translate3d(0, ${k * -70}px, 0)`;
+    copy.current.style.opacity = String(1 - k * 0.9);
+    stage3d.current.style.transform = `perspective(1000px) rotateX(${k * 22}deg) translate3d(0, ${k * 60}px, ${k * -160}px)`;
+  });
   return (
-    <section id="inicio" className="hero relative overflow-hidden">
+    <section ref={sec} id="inicio" className="hero relative overflow-hidden">
       <div className="hero-bg" aria-hidden="true" />
       <Embers />
       <div key={lang} className="wrap relative grid min-h-[100svh] items-center gap-10 pb-24 pt-[calc(108px+env(safe-area-inset-top,0px))] lg:grid-cols-[1.05fr_0.95fr] lg:gap-4">
-        <div className="relative z-[2]">
+        <div ref={copy} className="relative z-[2] will-change-transform">
           <p className="eyebrow intro" style={{ '--d': '0.15s' }}><span className="dot" />{t.hero.eyebrow}</p>
           <h1 className="hero-h1">
             <span className="hl"><span className="hl-in" style={{ '--i': 0 }}>{t.hero.l1}</span></span>
@@ -68,7 +79,7 @@ export default function Hero() {
             <div><b className="font-script normal-case">¡{t.hero.since}!</b><span>Riohacha</span></div>
           </div>
         </div>
-        <div className="intro-pop relative"><Stage chip={t.hero.chip} /></div>
+        <div className="intro-pop relative"><div ref={stage3d} className="stage-3d"><Stage chip={t.hero.chip} /></div></div>
       </div>
       <div className="hero-logo-wm" aria-hidden="true"><QuileLogo plank={false} glow={false} /></div>
     </section>

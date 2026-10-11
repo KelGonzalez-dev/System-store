@@ -1,11 +1,36 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Img from './Img';
 import { WaIcon } from './Nav';
 import { MENU, SHARE_IDS, SIZES } from '../data';
 import { useI18n, wa } from '../i18n';
 import { useMoney } from './Menu';
+import { clamp, ease, reducedMotion, useScrollFrame, useTilt } from '../lib/scroll';
 
 const byId = (id) => MENU.find((m) => m.id === id);
+
+// Tarjeta con inclinación 3D al pasar el mouse y brillo que sigue al cursor
+function ShareCard({ m, i, t, pick, fmt }) {
+  const inner = useRef(null);
+  useTilt(inner, 9);
+  return (
+    <article className="share-card" data-i={i}>
+      <div ref={inner} className="sc-inner">
+        <div className="sc-photo"><Img id={m.img} alt={pick(m.n)} w={700} className="h-full w-full" /></div>
+        <span className="sc-num">0{i + 1}</span>
+        <div className="sc-body">
+          <span className="sc-people">👥 {m.people}+ {t.share.people}</span>
+          <h3>{pick(m.n)}</h3>
+          <p>{pick(m.d)}</p>
+          <div className="sc-foot">
+            <b>{fmt.format(m.price)}</b>
+            <a href={wa(t.menu.orderMsg(pick(m.n)))} target="_blank" rel="noopener noreferrer" className="sc-btn">{t.share.ask} →</a>
+          </div>
+        </div>
+        <i className="sc-glare" aria-hidden="true" />
+      </div>
+    </article>
+  );
+}
 
 function Person({ on }) {
   return (
@@ -19,6 +44,13 @@ function Person({ on }) {
 function Sizer() {
   const { t, pick } = useI18n();
   const fmt = useMoney();
+  const plateRef = useRef(null);
+  // El plato se "acuesta" sobre la mesa al entrar y gira suave con el scroll
+  useScrollFrame(plateRef, (p) => {
+    if (reducedMotion()) return;
+    const k = ease(clamp((p - 0.05) / 0.4));
+    plateRef.current.style.transform = `perspective(900px) rotateX(${(1 - k) * 58}deg) rotateZ(${(p - 0.5) * 40}deg) translateZ(${(1 - k) * -120}px)`;
+  });
   const [n, setN] = useState(4);
   const size = useMemo(() => SIZES.find((s) => n <= s.max) || SIZES[SIZES.length - 1], [n]);
   const item = byId(size.id);
@@ -36,9 +68,9 @@ function Sizer() {
         </label>
       </div>
       <div className="sizer-plate">
-        <div className="plate" style={{ '--s': scale }}>
+        <div ref={plateRef} className="plate-3d"><div className="plate" style={{ '--s': scale }}>
           <div className="plate-in"><Img id={item.img} alt={pick(item.n)} w={600} className="h-full w-full" /></div>
-        </div>
+        </div></div>
         <div className="sizer-result">
           <p className="font-script text-[24px] text-fuego">{t.share.sizer.for} {item.people} {t.share.people}</p>
           <p className="sizer-name">{pick(item.n)}</p>
@@ -53,6 +85,19 @@ function Sizer() {
 export default function Share() {
   const { t, pick } = useI18n();
   const fmt = useMoney();
+  const cards = useRef(null);
+  // Las 3 tarjetas llegan desde el fondo en 3D mientras se hace scroll (solo transform/opacity)
+  useScrollFrame(cards, (p, st) => {
+    const els = cards.current.children;
+    const mobile = st.vw < 900;
+    for (let i = 0; i < els.length; i++) {
+      const k = reducedMotion() ? 1 : ease(clamp((p - 0.04 - (mobile ? 0 : i * 0.045)) / 0.28));
+      const side = mobile ? 0 : i - 1;
+      const r = 1 - k;
+      els[i].style.transform = `perspective(1200px) translate3d(${side * r * 60}px, ${r * 110}px, ${-r * 320}px) rotateX(${r * 32}deg) rotateY(${-side * r * 26}deg)`;
+      els[i].style.opacity = String(Math.min(1, k * 1.4));
+    }
+  });
   return (
     <section id="compartir" className="share-sec relative overflow-hidden">
       <div className="wrap py-[clamp(80px,10vw,130px)]">
@@ -61,25 +106,8 @@ export default function Share() {
           <h2 className="rv mask-up sec-title mt-3 text-madera"><span>{t.share.title}</span></h2>
           <p className="rv mx-auto mt-4 max-w-[52ch] text-[16px] leading-relaxed text-madera/75">{t.share.lead}</p>
         </div>
-        <div className="share-cards mt-12">
-          {SHARE_IDS.map((id, i) => {
-            const m = byId(id);
-            return (
-              <article key={id} className="share-card rv" style={{ '--k': i }}>
-                <div className="sc-photo"><Img id={m.img} alt={pick(m.n)} w={700} className="h-full w-full" /></div>
-                <span className="sc-num">0{i + 1}</span>
-                <div className="sc-body">
-                  <span className="sc-people">👥 {m.people}+ {t.share.people}</span>
-                  <h3>{pick(m.n)}</h3>
-                  <p>{pick(m.d)}</p>
-                  <div className="sc-foot">
-                    <b>{fmt.format(m.price)}</b>
-                    <a href={wa(t.menu.orderMsg(pick(m.n)))} target="_blank" rel="noopener noreferrer" className="sc-btn">{t.share.ask} →</a>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+        <div ref={cards} className="share-cards mt-12">
+          {SHARE_IDS.map((id, i) => <ShareCard key={id} m={byId(id)} i={i} t={t} pick={pick} fmt={fmt} />)}
         </div>
         <Sizer />
       </div>

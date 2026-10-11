@@ -18,14 +18,14 @@ const IDX = { es: 0, en: 1 };
 export const DICT = {
   es: {
     loader: { heat: 'Encendiendo la parrilla', tag: 'Sabor para compartir', skip: 'Entrar', switching: 'Cambiando idioma a' },
-    nav: { home: 'Inicio', share: 'Para compartir', menu: 'La carta', place: 'El lugar', visit: 'Visítanos', order: 'Pedir', lang: 'Idioma', open: 'Abrir menú', close: 'Cerrar menú' },
+    nav: { home: 'Inicio', share: 'Para compartir', menu: 'La carta', place: 'El lugar', gallery: 'Galería', visit: 'Visítanos', order: 'Pedir', lang: 'Idioma', open: 'Abrir menú', close: 'Cerrar menú' },
     hero: {
       eyebrow: 'Riohacha · La Guajira', l1: 'El sabor de la brasa', l2: 'se comparte en familia',
       sub: 'Una buena parrilla, una mesa llena y muchas razones para sonreír. Carnes al carbón, salchipapas gigantes y el mejor sabor de Riohacha.',
       c1: 'Pedir por WhatsApp', c2: 'Ver la carta', chip: '🔥 100 % al carbón', fans: 'seguidores', posts: 'platos publicados', since: 'El mejor sabor',
       waMsg: '¡Hola Quile Parrilla! 🔥 Quiero hacer un pedido.',
     },
-    tape: ['Parrilla al carbón', 'Salchipapas', 'Espada Quile', 'Hamburguesas', 'Mazorcadas', 'Picadas'],
+    tape: ['Parrilla al carbón', 'Salchipapas', 'Espada Quile', 'Perros calientes', 'Fajitas quileñas', 'Quile cócteles'],
     share: {
       eyebrow: 'Para compartir', title: '3 platos para compartir en familia', lead: 'Los mejores momentos se comparten. Elige el tuyo y pon la mesa.',
       people: 'personas', ask: 'Pedir este plato',
@@ -44,10 +44,10 @@ export const DICT = {
       eyebrow: 'La carta', title: 'Todo sale de la brasa', lead: 'Carnes, salchipapas, hamburguesas y más. Mira la carta completa con foto de cada plato.',
       full: 'Ver la carta completa', back: 'Volver al inicio', fav: 'Favorito', share: 'Para compartir', hot: 'Picante', people: 'pers.',
       note: 'Precios de referencia en pesos colombianos. Confirma disponibilidad por WhatsApp.',
-      cats: { parrilla: 'Parrilla', compartir: 'Para compartir', salchipapas: 'Salchipapas', hamburguesas: 'Hamburguesas', mazorcadas: 'Mazorcadas', entradas: 'Entradas', bebidas: 'Bebidas' },
+      cats: { parrilla: 'Parrilla', compartir: 'Para compartir', salchipapas: 'Salchipapas', hamburguesas: 'Hamburguesas', sandwiches: 'Sándwiches cubanos', perros: 'Perros calientes', fajitas: 'Fajitas quileñas', mazorcadas: 'Mazorcadas', entradas: 'Entradas', cocteles: 'Quile cócteles', bebidas: 'Bebidas' },
       order: 'Pedir', orderMsg: (n) => `¡Hola Quile Parrilla! 🔥 Quiero pedir: ${n}`,
     },
-    insta: { title: 'Síguenos en Instagram', lead: 'Lo que pasa en la parrilla, todos los días.', cta: 'Ver Instagram' },
+    gal: { eyebrow: 'Galería', title: 'Así se vive Quile', lead: 'Desliza, arrastra o sigue bajando para recorrer la galería.', close: 'Cerrar', prev: 'Anterior', next: 'Siguiente' },
     visit: {
       title: 'Ven a Quile Parrilla', lead: 'Te esperamos en el centro de Riohacha. Reserva tu mesa o pide a domicilio por WhatsApp.',
       addr: 'Dirección', map: 'Cómo llegar', wa: 'WhatsApp', hours: 'Horario', hoursV: 'Escríbenos por WhatsApp para conocer el horario del día',
@@ -59,14 +59,14 @@ export const DICT = {
   },
   en: {
     loader: { heat: 'Firing up the grill', tag: 'Flavor to share', skip: 'Enter', switching: 'Switching language to' },
-    nav: { home: 'Home', share: 'To share', menu: 'Menu', place: 'The place', visit: 'Visit us', order: 'Order', lang: 'Language', open: 'Open menu', close: 'Close menu' },
+    nav: { home: 'Home', share: 'To share', menu: 'Menu', place: 'The place', gallery: 'Gallery', visit: 'Visit us', order: 'Order', lang: 'Language', open: 'Open menu', close: 'Close menu' },
     hero: {
       eyebrow: 'Riohacha · La Guajira', l1: 'The taste of the grill', l2: 'is better shared',
       sub: 'A great grill, a full table and plenty of reasons to smile. Charcoal-grilled meats, giant loaded fries and the best flavor in Riohacha.',
       c1: 'Order on WhatsApp', c2: 'See the menu', chip: '🔥 100% charcoal grilled', fans: 'followers', posts: 'dishes posted', since: 'The best flavor',
       waMsg: 'Hi Quile Parrilla! 🔥 I would like to place an order.',
     },
-    tape: ['Charcoal grill', 'Salchipapas', 'Quile skewer', 'Burgers', 'Mazorcadas', 'Platters'],
+    tape: ['Charcoal grill', 'Salchipapas', 'Quile skewer', 'Hot dogs', 'Quile fajitas', 'Quile cocktails'],
     share: {
       eyebrow: 'To share', title: '3 dishes to share with family', lead: 'The best moments are shared. Pick yours and set the table.',
       people: 'people', ask: 'Order this dish',
@@ -85,10 +85,10 @@ export const DICT = {
       eyebrow: 'The menu', title: 'Everything comes off the grill', lead: 'Meats, salchipapas, burgers and more. See the full menu with a photo of every dish.',
       full: 'See the full menu', back: 'Back to home', fav: 'Favorite', share: 'To share', hot: 'Spicy', people: 'ppl',
       note: 'Reference prices in Colombian pesos. Check availability on WhatsApp.',
-      cats: { parrilla: 'Grill', compartir: 'To share', salchipapas: 'Salchipapas', hamburguesas: 'Burgers', mazorcadas: 'Mazorcadas', entradas: 'Starters', bebidas: 'Drinks' },
+      cats: { parrilla: 'Grill', compartir: 'To share', salchipapas: 'Salchipapas', hamburguesas: 'Burgers', sandwiches: 'Cuban sandwiches', perros: 'Hot dogs', fajitas: 'Quile fajitas', mazorcadas: 'Mazorcadas', entradas: 'Starters', cocteles: 'Quile cocktails', bebidas: 'Drinks' },
       order: 'Order', orderMsg: (n) => `Hi Quile Parrilla! 🔥 I would like to order: ${n}`,
     },
-    insta: { title: 'Follow us on Instagram', lead: 'What happens at the grill, every day.', cta: 'Open Instagram' },
+    gal: { eyebrow: 'Gallery', title: 'This is Quile', lead: 'Swipe, drag or keep scrolling to explore the gallery.', close: 'Close', prev: 'Previous', next: 'Next' },
     visit: {
       title: 'Come to Quile Parrilla', lead: 'We are waiting for you in downtown Riohacha. Book a table or order delivery on WhatsApp.',
       addr: 'Address', map: 'Get directions', wa: 'WhatsApp', hours: 'Hours', hoursV: 'Message us on WhatsApp for today’s hours',

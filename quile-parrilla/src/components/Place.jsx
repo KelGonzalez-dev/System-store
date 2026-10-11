@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Img from './Img';
 import { L } from '../data';
 import { useI18n } from '../i18n';
+import { reducedMotion, useScrollFrame } from '../lib/scroll';
 
 // Número que cuenta hacia arriba al entrar en pantalla
 function Count({ to, suffix = '' }) {
@@ -24,13 +25,24 @@ function Count({ to, suffix = '' }) {
 
 export default function Place() {
   const { t } = useI18n();
+  const col = useRef(null);
+  // Collage en profundidad: cada foto se mueve en un plano 3D distinto con el scroll
+  useScrollFrame(col, (p, st) => {
+    if (reducedMotion()) return;
+    const d = p - 0.5;
+    const m = st.vw < 768 ? 0.5 : 1;
+    const [a, b, c] = col.current.children;
+    a.style.transform = `perspective(1400px) rotateY(${d * 16 * m}deg) translate3d(0, ${d * -30 * m}px, 0)`;
+    b.style.transform = `perspective(1400px) rotateY(${d * -12 * m}deg) translate3d(0, ${d * -90 * m}px, ${40 * m}px)`;
+    c.style.transform = `perspective(1400px) rotateY(${d * -18 * m}deg) translate3d(0, ${d * 70 * m}px, ${70 * m}px)`;
+  });
   return (
     <section id="lugar" className="place-sec relative overflow-hidden">
       <div className="wrap grid items-center gap-12 py-[clamp(80px,10vw,130px)] lg:grid-cols-2">
-        <div className="place-collage">
-          <div className="pc-a rv"><Img id={L.interior} alt="Quile Parrilla" w={800} className="h-full w-full" /></div>
-          <div className="pc-b rv"><Img id={L.ambiente} alt="" w={500} className="h-full w-full" /></div>
-          <div className="pc-c rv"><Img id={L.parrillero} alt="" w={500} className="h-full w-full" /></div>
+        <div ref={col} className="place-collage">
+          <div className="pc-a"><Img id={L.interior} alt="Quile Parrilla" w={800} className="h-full w-full" /></div>
+          <div className="pc-b"><Img id={L.ambiente} alt="" w={500} className="h-full w-full" /></div>
+          <div className="pc-c"><Img id={L.parrillero} alt="" w={500} className="h-full w-full" /></div>
         </div>
         <div>
           <p className="eyebrow">{t.place.eyebrow}</p>

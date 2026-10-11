@@ -37,6 +37,7 @@ export function createEmbers(canvas, { count = 90, intensity = 1 } = {}) {
     return p;
   };
   const parts = Array.from({ length: count }, () => spawn({}, true));
+  const bursts = []; // chispas sueltas (explosiones puntuales)
 
   const frame = (now) => {
     const dt = Math.min(3, (now - last) / 16.67 || 1); last = now;
@@ -54,6 +55,17 @@ export function createEmbers(canvas, { count = 90, intensity = 1 } = {}) {
       ctx.globalAlpha = a;
       ctx.drawImage(sprite, p.x - s * 2, p.y - s * 2, s * 4, s * 4);
     }
+    for (let i = bursts.length - 1; i >= 0; i--) {
+      const b = bursts[i];
+      b.life += dt;
+      b.vx *= 0.97; b.vy = b.vy * 0.97 - 0.035 * dt;
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      const k = b.life / b.max;
+      if (k >= 1) { bursts.splice(i, 1); continue; }
+      const s = b.s * (1 - k * 0.6);
+      ctx.globalAlpha = 1 - k;
+      ctx.drawImage(sprite, b.x - s * 2, b.y - s * 2, s * 4, s * 4);
+    }
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
     if (running) raf = requestAnimationFrame(frame);
@@ -63,6 +75,15 @@ export function createEmbers(canvas, { count = 90, intensity = 1 } = {}) {
     start() { if (!running) { running = true; last = performance.now(); raf = requestAnimationFrame(frame); } },
     stop() { running = false; cancelAnimationFrame(raf); },
     set(v) { level = v; },
+    // explosión de chispas en un punto (coordenadas de pantalla relativas al canvas)
+    burst(x, y, n = 20, power = 4, spread = Math.PI * 2, dir = -Math.PI / 2) {
+      if (bursts.length > 260) return;
+      for (let i = 0; i < n; i++) {
+        const a = dir + (Math.random() - 0.5) * spread;
+        const v = power * (0.35 + Math.random() * 0.9);
+        bursts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, s: 1.5 + Math.random() * 3.5, life: 0, max: 30 + Math.random() * 45 });
+      }
+    },
     resize,
   };
 }
