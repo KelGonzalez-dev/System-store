@@ -27,12 +27,4 @@ Reemplázalas por las originales con el mismo nombre. Los platos sin foto propia
 para usar una foto propia, ponla en `public/images/local/` y cambia el id por la ruta.
 
 ## Piezas
-- `components/Loader.jsx` — "marcado a fuego": brasas que suben, el logo sale al rojo vivo y se enfría hasta su azul,
-  la llama se enciende, cuelga la tablilla PARRILLA y la pantalla se quema para revelar la página.
-- `components/Brand.jsx` + `lib/logoPath.js` — el logo de Quile vectorizado de su imagen original.
-- `lib/embers.js` — brasas en canvas (se pausan solas fuera de pantalla).
-- `components/Share.jsx` — 3 platos para compartir + selector "¿Cuántos son en la mesa?".
-- `components/Menu.jsx`, `CartaPage.jsx` — carta con foto de cada plato y botón de pedido por WhatsApp.
-- `components/Gallery.jsx` — galería 3D tipo coverflow: avanza con el scroll, se arrastra con el dedo o el mouse y abre un visor a pantalla completa.
-- Animaciones 3D al hacer scroll (`lib/scroll.js`): un solo ciclo de animación, solo transform/opacity, se apagan fuera de pantalla y con "reducir movimiento".
-- `components/Visit.jsx` — dirección, mapa (carga al tocarlo), reserva por WhatsApp, footer.
+- `components/Loader.jsx` — "Encendido": cae una chispa y enciende la parrilla, sube un fuego real (simulación en canvas), una antorcha escribe el logo dejando chispas (sale al rojo vivo y se enfría hasta su azul), la llama de la "i" explota en chispas, cuelga la tablilla, la frase se enciende letra por letra, el termómetro llega a 400 °C y el fuego cubre la pantalla y la quema para revelar la página.
