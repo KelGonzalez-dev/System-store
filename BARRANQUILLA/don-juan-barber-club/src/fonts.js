@@ -1,0 +1,4 @@
+import '@fontsource/bebas-neue/400.css';
+import '@fontsource-variable/montserrat';
+import '@fontsource-variable/cormorant-garamond/wght-italic.css';
+import '@fontsource-variable/manrope';
