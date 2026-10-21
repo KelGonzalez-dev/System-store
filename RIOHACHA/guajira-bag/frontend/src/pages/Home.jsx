@@ -2,6 +2,9 @@ import { Link } from 'react-router-dom';
 import Seo, { SITE_URL } from '../components/Seo';
 import { useReveal } from '../hooks/useReveal';
 import GalleryPreview from '../components/GalleryPreview';
+import Testimonials from '../components/Testimonials';
+import Benefits from '../components/Benefits';
+import Picks from '../components/Picks';
 
 const STRIP = ['Wayuu', 'Kankuama', 'Tejido a mano', 'La Guajira', 'Piezas únicas', 'Colombia'];
 
@@ -118,7 +121,7 @@ function Why() {
   );
 }
 
-export default function Home() {
+export default function Home({ onAdd }) {
   return (
     <>
       <Seo
@@ -138,8 +141,11 @@ export default function Home() {
       />
       <Hero />
       <Strip />
+      <div className="wrap"><Benefits /></div>
+      <Picks onAdd={onAdd} />
       <GalleryPreview />
       <Story />
+      <Testimonials />
       <Why />
     </>
   );

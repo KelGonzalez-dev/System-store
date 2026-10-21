@@ -6,10 +6,10 @@ export const useLoader = () => useContext(Ctx);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export const LOADS = {
-  boot: { label: 'Guajira Bags', sub: 'Bienvenida a tu tienda', ms: 5000 },
-  admin: { label: 'Panel administrativo', sub: 'Abriendo el taller', ms: 5000, lines: ['Preparando tu taller', 'Ordenando los hilos', 'Todo listo para ti'] },
-  login: { label: 'Validando credenciales', sub: 'Verificando tu acceso', ms: 3000, lines: ['Validando credenciales…', 'Verificando tu acceso', 'Un momento, por favor'] },
-  logout: { label: 'Cerrando sesión', sub: 'Hasta pronto', ms: 5000, lines: ['Guardando tus cambios', 'Cerrando tu sesión de forma segura', 'Vuelve pronto'] },
+  boot: { label: 'Guajira Bags', sub: 'Bienvenida a tu tienda', ms: 3600 },
+  admin: { label: 'Panel administrativo', sub: 'Abriendo el taller', ms: 2200, lines: ['Preparando tu taller', 'Ordenando los hilos', 'Todo listo para ti'] },
+  login: { label: 'Validando credenciales', sub: 'Verificando tu acceso', ms: 1800, lines: ['Validando credenciales…', 'Verificando tu acceso', 'Un momento, por favor'] },
+  logout: { label: 'Cerrando sesión', sub: 'Hasta pronto', ms: 2000, lines: ['Guardando tus cambios', 'Cerrando tu sesión de forma segura', 'Vuelve pronto'] },
 };
 
 /**
@@ -39,7 +39,7 @@ export function LoaderProvider({ children }) {
     if (left > 0) await sleep(left);
     onReady?.(result, error);
     setScreen((s) => (s && s.id === id ? { ...s, leaving: true } : s));
-    await sleep(1300);
+    await sleep(1000);
     setScreen((s) => (s && s.id === id ? null : s));
     busy.current = false;
   }, []);

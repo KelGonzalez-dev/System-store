@@ -25,8 +25,8 @@
   --nav-h: 64px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
-  --f-display: 'Fraunces', 'Cormorant Garamond', Georgia, serif;
-  --f-body: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-display: 'Fraunces Variable', 'Fraunces', Georgia, serif;
+  --f-body: 'Manrope Variable', 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; }

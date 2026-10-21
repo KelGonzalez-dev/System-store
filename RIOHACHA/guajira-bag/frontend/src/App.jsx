@@ -1,15 +1,18 @@
-import { useCallback, useState } from 'react';
-import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import WhatsAppFab from './components/WhatsAppFab';
 import CartDrawer from './components/CartDrawer';
 import LoginModal from './components/LoginModal';
 import Home from './pages/Home';
-import CatalogPage from './pages/CatalogPage';
-import GalleryPage from './pages/GalleryPage';
-import ContactPage from './pages/ContactPage';
-import AdminGate from './admin/AdminGate';
+import ErrorBoundary from './components/ErrorBoundary';
+
+// Cada página se descarga solo cuando se visita (el inicio carga más rápido)
+const CatalogPage = lazy(() => import('./pages/CatalogPage'));
+const GalleryPage = lazy(() => import('./pages/GalleryPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const AdminGate = lazy(() => import('./admin/AdminGate'));
 import { useScrollTop } from './hooks/useScrollTop';
 import { LoaderProvider, LOADS, useLoader } from './context/LoaderContext';
 import { login } from './api';
@@ -21,6 +24,7 @@ function ScrollManager() {
 
 function Shell() {
   const navigate = useNavigate();
+  const location = useLocation();
   const run = useLoader();
   const [user, setUser] = useState(() => {
     try {
@@ -30,7 +34,13 @@ function Shell() {
       return null;
     }
   });
-  const [cart, setCart] = useState([]);
+  // El carrito se guarda en el navegador: no se pierde al recargar
+  const [cart, setCart] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('gb_cart') || '[]'); } catch { return []; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('gb_cart', JSON.stringify(cart.map(({ id, codigo, name, price, image, qty, desc, details }) => ({ id, codigo, name, price, image, qty, desc, details })))); } catch { /* sin almacenamiento */ }
+  }, [cart]);
   const [cartOpen, setCartOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
@@ -76,14 +86,18 @@ function Shell() {
     <>
       <ScrollManager />
       <Navbar cartCount={cartCount} onCartOpen={() => setCartOpen(true)} user={user} onAdmin={openAdmin} onLogout={handleLogout} />
+      <ErrorBoundary key={location.pathname}>
+      <Suspense fallback={<div className="route-wait" aria-hidden="true" />}>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Home onAdd={addToCart} />} />
         <Route path="/catalogo" element={<CatalogPage onAdd={addToCart} />} />
         <Route path="/galeria" element={<GalleryPage />} />
         <Route path="/contacto" element={<ContactPage />} />
         <Route path="/admin" element={<AdminGate user={user} onLogout={handleLogout} />} />
-        <Route path="*" element={<Home />} />
+        <Route path="*" element={<Home onAdd={addToCart} />} />
       </Routes>
+      </Suspense>
+      </ErrorBoundary>
       <Footer user={user} onAdmin={openAdmin} />
       <WhatsAppFab />
       <CartDrawer cart={cart} setCart={setCart} isOpen={cartOpen} onClose={() => setCartOpen(false)} />

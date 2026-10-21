@@ -1,12 +1,35 @@
+# ============================================================
+#  GUAJIRA BAGS — API v3
+# ============================================================
 RewriteEngine On
 
-# Servir archivos estáticos directamente
+# Pasar el encabezado Authorization a PHP (algunos hostings lo quitan)
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# Miniaturas ya generadas: Apache las sirve directo (sin PHP)
+RewriteCond %{REQUEST_FILENAME}.webp -f
+RewriteRule ^(img/[0-9]+/uploads/.+)$ $1.webp [L]
+RewriteCond %{REQUEST_FILENAME}.jpg -f
+RewriteRule ^(img/[0-9]+/uploads/.+)$ $1.jpg [L]
+
+# Archivos que existen se sirven tal cual
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
-# Redirigir todo lo demás al front controller
+# Todo lo demás pasa por index.php
 RewriteRule ^ index.php [QSA,L]
 
-# Permitir subida de archivos grandes (ajusta según tu hosting)
-php_value upload_max_filesize 6M
-php_value post_max_size 8M
+# Tamaño de subida (fotos de celular)
+<IfModule mod_php.c>
+    php_value upload_max_filesize 16M
+    php_value post_max_size 20M
+    php_value memory_limit 256M
+</IfModule>
+
+# Compresión de JSON y textos
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE application/json text/plain text/html
+</IfModule>
+
+AddType image/webp .webp

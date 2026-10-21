@@ -1,83 +1,41 @@
-# Guajira Bags — API PHP
+# Guajira Bags — API v3
 
-API REST en PHP para MySQL/MariaDB. Reemplaza la API anterior en C#/.NET.
+## Qué hace
+- **Miniaturas automáticas** `/img/{ancho}/uploads/...` (WebP). La primera vez las genera PHP;
+  después Apache las sirve directo desde `public/img/` con caché de 1 año.
+- **Fotos nuevas optimizadas al subirlas**: enderezadas, máx. 1800 px, WebP (~200 KB).
+- **Productos**: búsqueda `q`, orden `orden=recientes|precio_asc|precio_desc|nombre`, precio `min`/`max`,
+  campo `codigo`, `fotos` con id; una sola consulta para todas las fotos de la página.
+- **Reseñas** compatibles con tu tabla actual: de una mochila o **de la tienda** (sin producto), y gestión desde el panel.
+- Respuestas JSON comprimidas, con ETag (304) y caché de 60 s en el catálogo público
+  (el panel con sesión siempre recibe datos frescos).
+- CORS para guajirabags.com, www y localhost, **también cuando hay un error**.
+- `public/index.php` encuentra solo las carpetas `src/` y `config/` aunque el hosting tenga otra estructura;
+  `.htaccess` en la raíz por si el dominio apunta a `php-api/` en vez de a `public/`.
+- Ajustes automáticos de la base de datos (una sola vez): columna `codigo`, índices y tabla de reseñas. No borra nada.
+- Seguridad: `/auth/register` requiere sesión; se valida que lo subido sea una imagen real;
+  `config/` y `storage/` bloqueados; campo trampa contra robots en las reseñas.
 
-## Requisitos
+Requiere PHP 8.0+ con GD (sin GD funciona igual, pero entrega las fotos originales).
 
-- PHP 8.1+
-- MySQL 5.7+ / MariaDB 10.3+
-- Extensión PDO MySQL habilitada
-- Apache con mod_rewrite (producción) o PHP built-in server (desarrollo)
+## Rutas
+| Método | Ruta | Acceso |
+| --- | --- | --- |
+| POST | /api/auth/login | público |
+| POST | /api/auth/register | sesión |
+| GET | /api/productos?pagina&porPagina&soloActivos&q&orden&min&max | público |
+| GET | /api/productos/{id} | público |
+| POST / PUT / DELETE | /api/productos, /api/productos/{id} | sesión |
+| POST | /api/productos/{id}/imagenes | sesión |
+| DELETE | /api/productos/{id}/imagenes/{imagenId} | sesión |
+| GET / POST | /api/productos/{id}/resenas | público |
+| POST | /api/resenas (de la tienda, o con `producto_id`) | público |
+| GET | /api/resenas — sin sesión: todas las visibles · con sesión: panel (`visible`, `buscar`) | público / sesión |
+| GET | /api/resenas/resumen?ids=1,2 · /api/resenas/recientes | público |
+| PUT / DELETE | /api/resenas/{id} | sesión |
+| GET | /api/galeria · /api/galeria/{id} | público |
+| POST / PUT / DELETE | /api/galeria, /api/galeria/{id} | sesión |
+| GET | /img/{ancho}/uploads/... | público (miniatura) |
 
-## Instalación
-
-### 1. Crear la base de datos
-
-Ejecuta el script SQL que tienes (crea `guajira_bags` con tablas `usuarios`, `productos`, `producto_imagenes`, `galeria`).
-
-### 2. Configurar conexión
-
-Copia el ejemplo y edita tus credenciales:
-
-```bash
-cp config/config.local.php.example config/config.local.php
-```
-
-### 3. Configurar usuario admin
-
-El script SQL incluye un hash placeholder. Genera uno real:
-
-```bash
-php scripts/setup-admin.php
-# o con otra contraseña:
-php scripts/setup-admin.php "TuContraseñaSegura"
-```
-
-Credenciales por defecto: `admin` / `Admin123!`
-
-### 4. Iniciar servidor (desarrollo)
-
-```bash
-cd php-api/public
-php -S localhost:8080
-
-Para ejecutar la api "C:\php\php.exe -S localhost:8080"  Si no funciona con ese comando usar este "C:\php\php.exe -S localhost:8080 -t public public/index.php"
-```
-
-La API queda en `http://localhost:8080/api`
-
-## Endpoints
-
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| POST | /api/auth/login | No | Iniciar sesión |
-| POST | /api/auth/register | No | Registrar admin |
-| GET | /api/productos | No | Listar productos (paginado) |
-| GET | /api/productos/{id} | No | Obtener producto |
-| POST | /api/productos | Sí | Crear producto |
-| PUT | /api/productos/{id} | Sí | Actualizar producto |
-| DELETE | /api/productos/{id} | Sí | Eliminar producto |
-| POST | /api/productos/{id}/imagenes | Sí | Agregar imagen extra |
-| GET | /api/galeria | No | Listar galería |
-| GET | /api/galeria/{id} | No | Obtener imagen |
-| POST | /api/galeria | Sí | Subir foto |
-| PUT | /api/galeria/{id} | Sí | Actualizar caption/orden/activo |
-| DELETE | /api/galeria/{id} | Sí | Eliminar imagen |
-
-## Despliegue en hosting compartido
-
-1. Sube la carpeta `php-api/` a tu hosting.
-2. Apunta el document root a `php-api/public/`.
-3. Crea `config/config.local.php` con credenciales de MySQL del hosting.
-4. Ejecuta `setup-admin.php` vía SSH o crea el admin manualmente.
-5. Asegúrate de que `public/uploads/` tenga permisos de escritura (755 o 775).
-
-## Frontend
-
-El frontend React debe apuntar a esta API:
-
-```
-REACT_APP_API_URL=http://localhost:8080
-```
-
-Las imágenes se sirven desde `/uploads/productos/` y `/uploads/galeria/`.
+## Opcional
+`php scripts/optimizar-fotos.php` genera de una vez las miniaturas de todas las fotos ya subidas.

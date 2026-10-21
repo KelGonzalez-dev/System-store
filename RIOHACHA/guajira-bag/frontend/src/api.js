@@ -15,14 +15,16 @@ export const login = (data) =>
   api.post('/auth/login', data).then(r => r.data);
 
 // ── Productos ────────────────────────────────────────────────
-// NOTA: se agrega `_ts` (timestamp) a los GET para evitar que el navegador
-// (sobre todo en móviles) sirva una respuesta cacheada idéntica a la anterior
-// justo después de guardar una edición, lo que hacía parecer que el
-// producto "no se actualizaba" aunque el backend sí lo hubiera guardado.
-export const getProductos = (pagina = 1, porPagina = 15, soloActivos = true) =>
-  api.get('/productos', {
-    params: { pagina, porPagina, soloActivos }
-  }).then(r => r.data);
+// opciones: { q, orden: 'recientes'|'precio_asc'|'precio_desc'|'nombre', min, max, signal }
+export const getProductos = (pagina = 1, porPagina = 15, soloActivos = true, opciones = {}) => {
+  const { signal, ...filtros } = opciones;
+  const params = { pagina, porPagina, soloActivos };
+  Object.entries(filtros).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') params[k] = v; });
+  return api.get('/productos', { params, signal }).then(r => r.data);
+};
+
+export const getProducto = (id) =>
+  api.get(`/productos/${id}`).then(r => r.data);
 
 export const createProducto = (formData) =>
   api.post('/productos', formData).then(r => r.data);
@@ -55,3 +57,30 @@ export const deleteGaleriaItem = (id) =>
   api.delete(`/galeria/${id}`);
 
 export default api;
+
+// ── Reseñas ──────────────────────────────────────────────────
+export const getResenas = (productoId, pagina = 1, porPagina = 5) =>
+  api.get(`/productos/${productoId}/resenas`, { params: { pagina, porPagina } }).then(r => r.data);
+
+export const crearResena = (productoId, data) =>
+  api.post(`/productos/${productoId}/resenas`, data).then(r => r.data);
+
+export const getResumenResenas = (ids) =>
+  api.get('/resenas/resumen', { params: { ids: ids.join(',') } }).then(r => r.data);
+
+export const getResenasRecientes = (n = 8) =>
+  api.get('/resenas/recientes', { params: { n } }).then(r => r.data);
+
+// Panel
+export const getResenasAdmin = (params) =>
+  api.get('/resenas', { params }).then(r => r.data);
+
+export const updateResena = (id, data) =>
+  api.put(`/resenas/${id}`, data).then(r => r.data);
+
+export const deleteResena = (id) =>
+  api.delete(`/resenas/${id}`);
+
+// Reseña desde el inicio (de la tienda, sin elegir mochila)
+export const crearResenaGeneral = (data) =>
+  api.post('/resenas', data).then(r => r.data);

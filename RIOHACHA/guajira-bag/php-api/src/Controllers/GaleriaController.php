@@ -12,15 +12,14 @@ class GaleriaController
     public function listar(): void
     {
         $soloActivos = filter_var($_GET['soloActivos'] ?? 'true', FILTER_VALIDATE_BOOLEAN);
-        Response::json($this->service->listar($soloActivos));
+        Response::json($this->service->listar($soloActivos), 200, $soloActivos ? 120 : 0);
     }
 
     public function obtener(int $id): void
     {
         $item = $this->service->obtener($id);
         if (!$item) {
-            http_response_code(404);
-            exit;
+            Response::error('Imagen no encontrada', 404);
         }
         Response::json($item);
     }
@@ -39,7 +38,6 @@ class GaleriaController
             Response::error($error);
         }
 
-        http_response_code(201);
         header('Location: /api/galeria/' . $data['id']);
         Response::json($data, 201);
     }
@@ -58,8 +56,7 @@ class GaleriaController
     public function eliminar(int $id): void
     {
         if (!$this->service->eliminar($id)) {
-            http_response_code(404);
-            exit;
+            Response::error('Imagen no encontrada', 404);
         }
         Response::noContent();
     }

@@ -12,6 +12,7 @@ USE guajira_bags;
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS resenas;
 DROP TABLE IF EXISTS producto_imagenes;
 DROP TABLE IF EXISTS productos;
 DROP TABLE IF EXISTS galeria;
@@ -31,6 +32,7 @@ CREATE TABLE usuarios (
 
 CREATE TABLE productos (
     id                 INT AUTO_INCREMENT PRIMARY KEY,
+    codigo             VARCHAR(60),
     nombre             VARCHAR(200) NOT NULL,
     descripcion        TEXT         NOT NULL,
     descripcion_larga  TEXT,
@@ -61,10 +63,21 @@ CREATE TABLE galeria (
     creado_en   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE INDEX idx_productos_activo    ON productos(activo);
-CREATE INDEX idx_galeria_activo      ON galeria(activo);
-CREATE INDEX idx_galeria_orden       ON galeria(orden);
-CREATE INDEX idx_prod_imagenes_prod  ON producto_imagenes(producto_id);
+CREATE TABLE resenas (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    producto_id    INT          NULL,
+    nombre         VARCHAR(80)  NOT NULL,
+    ciudad         VARCHAR(80),
+    calificacion   TINYINT      NOT NULL,
+    comentario     TEXT         NOT NULL,
+    visible        TINYINT(1)   NOT NULL DEFAULT 1,
+    creado_en      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_productos_activo_fecha ON productos(activo, creado_en);
+CREATE INDEX idx_prodimg_orden          ON producto_imagenes(producto_id, orden);
+CREATE INDEX idx_galeria_activo_orden   ON galeria(activo, orden);
+CREATE INDEX idx_resenas_producto       ON resenas(producto_id, visible, creado_en);
 
 -- Usuario admin inicial — ejecuta: php scripts/setup-admin.php
 INSERT INTO usuarios (username, email, password_hash, rol)
