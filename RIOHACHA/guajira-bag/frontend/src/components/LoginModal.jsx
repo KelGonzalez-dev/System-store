@@ -39,7 +39,7 @@ export default function LoginModal({ isOpen, onClose, onValidate }) {
     <div className="modal-veil" onClick={(e) => e.target === e.currentTarget && onClose()} role="presentation">
       <div className="login-card" role="dialog" aria-modal="true" aria-label="Acceso administrativo">
         <button type="button" className="login-card__close" onClick={onClose} aria-label="Cerrar"><X size={18} /></button>
-        <img src="/images/logo.webp" alt="" className="login-card__mark" />
+        <img src="/images/emblema-192.webp" alt="" className="login-card__mark" />
         <h2>Acceso administrativo</h2>
         <p className="sub">Guajira Bags</p>
         <form onSubmit={submit}>

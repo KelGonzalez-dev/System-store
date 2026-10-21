@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Image, LogOut, Package, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Image, LogOut, MessageSquareQuote, Package, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   deleteGaleriaItem, deleteProducto, getGaleria, getProductos, updateGaleriaItem,
 } from '../api';
-import { toMediaUrl } from '../config';
+import { thumb, toMediaUrl } from '../config';
 import ProductoModal from './ProductoModal';
 import GaleriaModal from './GaleriaModal';
+import ResenasAdmin from './ResenasAdmin';
 
 function Toast({ toast }) {
   if (!toast) return null;
@@ -121,7 +122,7 @@ export default function AdminPanel({ user, onLogout }) {
     <div className="admin-page">
       <div className="admin-top">
         <div className="admin-top__brand">
-          <img src="/images/logo.webp" alt="" />
+          <img src="/images/emblema-96.webp" alt="" />
           <span>Panel<small>{user?.username}</small></span>
         </div>
         <button type="button" className="admin-logout" onClick={onLogout}><LogOut size={15} />Salir</button>
@@ -131,6 +132,7 @@ export default function AdminPanel({ user, onLogout }) {
         <div className="admin-tabs">
           <button type="button" className={tab === 'productos' ? 'active' : ''} onClick={() => setTab('productos')}><Package size={15} />Productos</button>
           <button type="button" className={tab === 'galeria' ? 'active' : ''} onClick={() => setTab('galeria')}><Image size={15} />Galería</button>
+          <button type="button" className={tab === 'resenas' ? 'active' : ''} onClick={() => setTab('resenas')}><MessageSquareQuote size={15} />Reseñas</button>
         </div>
 
         {tab === 'productos' && (
@@ -148,7 +150,7 @@ export default function AdminPanel({ user, onLogout }) {
                 {productos.map((p) => (
                   <div key={p.id} className="acard">
                     <div className="acard__img">
-                      {p.imagenUrl ? <img src={toMediaUrl(p.imagenUrl)} alt={p.nombre} /> : <span className="skel" />}
+                      {p.imagenUrl ? <img src={thumb(p.imagenUrl, 320)} alt={p.nombre} loading="lazy" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = toMediaUrl(p.imagenUrl); }} /> : <span className="skel" />}
                       <span className="acard__status" style={{ background: p.activo ? 'rgba(40,167,69,0.14)' : 'rgba(220,53,69,0.14)', color: p.activo ? '#28a745' : '#dc3545' }}>{p.activo ? 'Activo' : 'Inactivo'}</span>
                     </div>
                     <div className="acard__body">
@@ -174,6 +176,13 @@ export default function AdminPanel({ user, onLogout }) {
           </>
         )}
 
+        {tab === 'resenas' && (
+          <ResenasAdmin
+            toast={showToast}
+            confirm={(msg, fn) => setConfirm({ msg, onConfirm: () => { setConfirm(null); fn(); } })}
+          />
+        )}
+
         {tab === 'galeria' && (
           <>
             <div className="admin-panel-head">
@@ -188,7 +197,7 @@ export default function AdminPanel({ user, onLogout }) {
               <div className="admin-grid">
                 {galeria.map((item) => (
                   <div key={item.id} className={`acard${item.activo ? '' : ' acard--dim'}`}>
-                    <div className="acard__img"><img src={toMediaUrl(item.url)} alt={item.caption ?? ''} /></div>
+                    <div className="acard__img"><img src={thumb(item.url, 320)} alt={item.caption ?? ''} loading="lazy" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = toMediaUrl(item.url); }} /></div>
                     <div className="acard__body">
                       <p className="acard__caption">{item.caption || 'Sin descripción'}</p>
                       <div className="acard__actions">

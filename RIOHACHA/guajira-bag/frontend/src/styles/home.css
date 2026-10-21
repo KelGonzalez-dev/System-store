@@ -52,3 +52,45 @@
 .story__stat span { font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
 .story__photo { position: relative; border-radius: 34px 8px 34px 8px; overflow: hidden; padding-bottom: 100%; box-shadow: 0 40px 90px -20px rgba(20, 11, 5, 0.3); }
 .story__photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* Inicio · "Elegidas para ti" — adelanto del catálogo */
+.picks { padding: clamp(40px, 7vw, 84px) 0 10px; }
+.picks__head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 40px; margin-bottom: 30px; }
+.picks__head h2 { margin-top: 8px; font-size: clamp(30px, 4vw, 48px); color: var(--ink); }
+.picks__head h2 em { font-style: italic; color: var(--rose-deep); }
+.picks__head p { max-width: 40ch; font-family: var(--f-display); font-style: italic; font-size: 16px; color: #8a6a58; }
+.picks__grid { display: grid; grid-template-columns: 1.25fr 1fr 1fr; grid-template-rows: auto auto; gap: 26px 22px; }
+.pk { position: relative; animation: vin 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.pk--big { grid-row: span 2; }
+.pk__arch { position: relative; display: block; aspect-ratio: 4 / 4.6; border-radius: 400px 400px 22px 22px; overflow: hidden; background: #f3e3d6; box-shadow: 0 26px 40px -30px rgba(120, 70, 45, 0.6); }
+.pk--big .pk__arch { aspect-ratio: auto; height: calc(100% - 92px); min-height: 420px; }
+.pk__arch .img { position: absolute; inset: 0; }
+.pk__b { opacity: 0; transition: opacity 0.5s; }
+@media (hover: hover) { .pk:hover .pk__b { opacity: 1; } .pk:hover .pk__arch img { transform: scale(1.05); } }
+.pk__badge { position: absolute; left: 50%; top: 22px; transform: translateX(-50%); padding: 6px 14px; border-radius: 999px; font-family: var(--f-display); font-style: italic; font-size: 14px; color: var(--rose-deep); background: rgba(255, 250, 243, 0.94); white-space: nowrap; }
+.pk__add { position: absolute; right: 12px; top: 12px; z-index: 2; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; color: #fff; background: var(--rose-deep); box-shadow: 0 12px 22px -10px rgba(201, 135, 115, 0.9); transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s; }
+.pk:not(.pk--big) .pk__add { top: auto; bottom: 92px; }
+.pk--big .pk__add { top: auto; bottom: 104px; right: 18px; width: 48px; height: 48px; }
+.pk__add:hover { transform: scale(1.1) rotate(90deg); }
+.pk__add.ok { background: #1faa59; }
+.pk__info { display: block; padding: 12px 4px 0; min-height: 80px; }
+.pk__info h3 { font-family: var(--f-display); font-weight: 500; font-size: 17px; line-height: 1.2; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pk--big .pk__info h3 { font-size: 24px; }
+.pk__rate { display: inline-flex; align-items: center; gap: 5px; margin-top: 3px; }
+.pk__rate small { font-size: 12px; color: #8a6a58; }
+.pk__info b { display: block; margin-top: 3px; font-family: var(--f-display); font-weight: 400; font-size: 19px; color: var(--gold-700); }
+.pk--big .pk__info b { font-size: 24px; }
+.pk--more .pk__arch .img img { filter: blur(6px) saturate(0.9); transform: scale(1.12); }
+.pk__veil { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 20px; text-align: center; color: var(--ink); background: linear-gradient(180deg, rgba(251, 243, 234, 0.55), rgba(251, 243, 234, 0.85)); transition: background-color 0.4s; }
+.pk__veil b { font-family: var(--f-display); font-weight: 400; font-size: clamp(44px, 5vw, 64px); line-height: 1; color: var(--rose-deep); }
+.pk__veil > span { font-family: var(--f-display); font-style: italic; font-size: 16px; }
+.pk__veil em { margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 999px; font-style: normal; font-size: 13px; font-weight: 700; color: #fff; background: var(--rose-deep); transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.pk--more:hover .pk__veil em { transform: translateX(4px); }
+.pk--skel .pk__arch .skel { position: absolute; inset: 0; }
+@media (max-width: 760px) {
+  .picks__grid { grid-template-columns: 1fr 1fr; gap: 20px 12px; }
+  .pk--big { grid-column: span 2; grid-row: auto; }
+  .pk--big .pk__arch { height: auto; min-height: 0; aspect-ratio: 4 / 4.2; }
+  .pk:not(.pk--big) .pk__add { bottom: 86px; width: 38px; height: 38px; }
+  .pk__info h3 { font-size: 15px; }
+}

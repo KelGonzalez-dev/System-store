@@ -5,7 +5,7 @@ export default function Footer({ user, onAdmin }) {
   return (
     <footer className="footer">
       <div className="wrap footer__inner">
-        <img src="/images/logo.webp" alt="Guajira Bags" className="footer__logo" loading="lazy" />
+        <img src="/images/emblema-192.webp" alt="Guajira Bags" className="footer__logo" loading="lazy" />
         <p className="footer__brand">Guajira Bags</p>
         <p className="footer__tag">Tradición, elegancia y cultura tejida a mano.</p>
         <div className="footer__social">

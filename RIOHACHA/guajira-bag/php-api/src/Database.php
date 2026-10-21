@@ -5,6 +5,7 @@ namespace GuajiraBags;
 use PDO;
 use PDOException;
 
+/** Conexión única y perezosa: solo se abre si la ruta realmente necesita la base de datos. */
 class Database
 {
     private static ?PDO $instance = null;
@@ -13,14 +14,7 @@ class Database
     {
         if (self::$instance === null) {
             $db = $config['db'];
-            $dsn = sprintf(
-                'mysql:host=%s;port=%d;dbname=%s;charset=%s',
-                $db['host'],
-                $db['port'],
-                $db['database'],
-                $db['charset']
-            );
-
+            $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $db['host'], $db['port'] ?? 3306, $db['database'], $db['charset'] ?? 'utf8mb4');
             try {
                 self::$instance = new PDO($dsn, $db['username'], $db['password'], [
                     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
@@ -28,13 +22,10 @@ class Database
                     PDO::ATTR_EMULATE_PREPARES   => false,
                 ]);
             } catch (PDOException $e) {
-                http_response_code(500);
-                header('Content-Type: application/json');
-                echo json_encode(['error' => 'Error de conexión a la base de datos']);
-                exit;
+                error_log('[GuajiraBags] DB: ' . $e->getMessage());
+                Helpers\Response::error('Error de conexión a la base de datos', 500);
             }
         }
-
         return self::$instance;
     }
 }

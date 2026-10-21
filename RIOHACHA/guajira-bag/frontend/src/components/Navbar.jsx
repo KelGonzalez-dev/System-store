@@ -30,7 +30,7 @@ export default function Navbar({ cartCount, onCartOpen, user, onAdmin, onLogout 
       <header className={`nav${solid || open ? ' solid' : ''}`}>
         <div className="nav__row">
           <Link to="/" className="nav__brand" onClick={close} aria-label="Guajira Bags">
-            <img src="/images/logo.webp" alt="" width="38" height="38" />
+            <img src="/images/emblema-96.webp" alt="" width="38" height="38" />
             <span>Guajira Bags</span>
           </Link>
 

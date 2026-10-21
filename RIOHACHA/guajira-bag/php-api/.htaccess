@@ -1,0 +1,8 @@
+# ============================================================
+# Por si el dominio apunta a esta carpeta (php-api) en lugar de a public/:
+# todo se envía a public/ y las carpetas internas quedan bloqueadas.
+# ============================================================
+RewriteEngine On
+RewriteRule ^(config|src|database|scripts)(/|$) - [F,L]
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteRule ^(.*)$ public/$1 [L]

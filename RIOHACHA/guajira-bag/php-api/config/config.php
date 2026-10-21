@@ -1,43 +1,27 @@
 <?php
-/**
- * Configuración de la API Guajira Bags
- * Copia config.local.php.example → config.local.php para sobreescribir en producción.
- */
 
-$config = [
+return [
     'db' => [
-        'host'     => 'localhost',
+        'host'     => 'sdb-73.hosting.stackcp.net',
         'port'     => 3306,
-        'database' => 'guajira_bags',
-        'username' => 'root',
-        'password' => '',
+        'database' => 'guajira_bags-35303633f0ae',
+        'username' => 'guajira_bags-35303633f0ae',
+        'password' => '3$1MyVk![H)z',
         'charset'  => 'utf8mb4',
     ],
     'jwt' => [
-        'key'              => 'GuajiraBagsJWT2026ClaveSuperSecreta123456789',
-        'issuer'           => 'guajira-bags-api',
-        'audience'         => 'guajira-bags-frontend',
+        'key'                => 'pon-aqui-una-frase-larga-y-secreta-de-mas-de-32-caracteres',
+        'issuer'             => 'guajira-bags-api',
+        'audience'           => 'guajira-bags-frontend',
         'expires_in_minutes' => 1440,
     ],
     'cors' => [
-        'allowed_origins' => [
-            'http://localhost:3000',
-            'http://localhost:5173',
-            'http://127.0.0.1:3000',
-            'http://127.0.0.1:5173',
-        ],
+        // guajirabags.com, www.guajirabags.com y localhost ya vienen permitidos en index.php
+        'allowed_origins' => [],
     ],
     'uploads' => [
-        'folder'        => __DIR__ . '/../public/uploads',
-        'max_size_mb'   => 5,
-        'allowed_ext'   => ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+        'folder'      => __DIR__ . '/../public/uploads',
+        'max_size_mb' => 12,  // las fotos se optimizan al subirlas (quedan en ~200 KB)
+        'allowed_ext' => ['jpg', 'jpeg', 'png', 'webp', 'gif'],
     ],
 ];
-
-$localConfig = __DIR__ . '/config.local.php';
-if (file_exists($localConfig)) {
-    $local = require $localConfig;
-    $config = array_replace_recursive($config, $local);
-}
-
-return $config;

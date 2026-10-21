@@ -26,7 +26,7 @@ body { background: linear-gradient(180deg, #f8eee4 0%, #f3e2d5 45%, #f7ebe0 100%
 /* Navbar */
 .nav { background: rgba(248, 238, 228, 0.7); }
 .nav.solid { background: rgba(249, 240, 231, 0.95); box-shadow: 0 14px 34px -24px rgba(90, 55, 35, 0.4); }
-.nav__brand img, .footer__logo, .login-card__mark, .admin-top__brand img { background: #2c1a12; border-radius: 50%; }
+.nav__brand img, .footer__logo, .login-card__mark, .admin-top__brand img { background: none; border-radius: 0; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(120, 80, 30, 0.25)); }
 .nav__cart-badge { background: var(--rose-deep); color: #fff; }
 .nav__pill { display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 15px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; transition: transform 0.3s var(--ease), background-color 0.3s; }
 .nav__pill--panel { color: var(--ink); border: 1px solid var(--hair); }
@@ -74,15 +74,6 @@ body { background: linear-gradient(180deg, #f8eee4 0%, #f3e2d5 45%, #f7ebe0 100%
 @media (max-width: 700px) { .gpreview__grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } .gpreview__item:nth-child(n+5) { display: none; } }
 
 /* Catálogo */
-.catalog-page, .gallery-page, .admin-page { background: transparent; }
-.pcard { background: var(--paper); border-radius: 24px; }
-.pcard:hover { box-shadow: 0 28px 50px -24px rgba(120, 70, 45, 0.45); border-color: var(--rose); }
-.pcard__num { width: auto; height: auto; padding: 5px 11px; background: rgba(255, 250, 244, 0.9); color: var(--rose-deep); font-family: var(--f-display); font-style: italic; font-size: 11.5px; font-weight: 500; }
-.pcard__badge { background: linear-gradient(135deg, #d99a88, #c07a68); }
-.pcard__price { font-family: var(--f-display); font-weight: 500; font-size: 21px; color: var(--gold-700); }
-.pcard__cta { background: linear-gradient(135deg, #e9b9a9, #d99a88); color: #fff; }
-.pmodal__off { background: linear-gradient(135deg, #d99a88, #c07a68); }
-.pmodal__nav { background: rgba(255, 250, 244, 0.9); }
 
 /* Footer y admin */
 .footer { background: #2c1a12; }

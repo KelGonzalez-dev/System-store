@@ -2,24 +2,18 @@
 
 namespace GuajiraBags\Services;
 
+/** Guarda las fotos subidas ya optimizadas (ver ImageService) y borra las que se reemplazan. */
 class FileStorageService
 {
     private string $uploadFolder;
     private int $maxBytes;
     private array $allowedExt;
 
-    public function __construct(array $config)
+    public function __construct(array $config, private ImageService $images)
     {
         $this->uploadFolder = rtrim($config['uploads']['folder'], '/\\');
-        $this->maxBytes     = (int) ($config['uploads']['max_size_mb'] * 1024 * 1024);
-        $this->allowedExt   = $config['uploads']['allowed_ext'];
-
-        foreach (['productos', 'galeria'] as $sub) {
-            $dir = $this->uploadFolder . DIRECTORY_SEPARATOR . $sub;
-            if (!is_dir($dir)) {
-                mkdir($dir, 0755, true);
-            }
-        }
+        $this->maxBytes     = (int) (($config['uploads']['max_size_mb'] ?? 12) * 1024 * 1024);
+        $this->allowedExt   = $config['uploads']['allowed_ext'] ?? ['jpg', 'jpeg', 'png', 'webp', 'gif'];
     }
 
     /** @return array{0: bool, 1: string, 2: string} */
@@ -28,44 +22,37 @@ class FileStorageService
         if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
             return [false, 'El archivo está vacío o hubo un error al subirlo', ''];
         }
-
         if (($file['size'] ?? 0) === 0) {
             return [false, 'El archivo está vacío', ''];
         }
-
         if ($file['size'] > $this->maxBytes) {
-            $mb = $this->maxBytes / 1024 / 1024;
-            return [false, "El archivo supera el máximo permitido ({$mb} MB)", ''];
+            return [false, 'El archivo supera el máximo permitido (' . round($this->maxBytes / 1048576) . ' MB)', ''];
         }
-
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $ext = strtolower(pathinfo($file['name'] ?? '', PATHINFO_EXTENSION));
         if (!in_array($ext, $this->allowedExt, true)) {
-            $list = implode(', ', array_map(fn($e) => ".$e", $this->allowedExt));
-            return [false, "Extensión no permitida. Use: $list", ''];
+            return [false, 'Extensión no permitida. Use: ' . implode(', ', array_map(fn($e) => ".$e", $this->allowedExt)), ''];
+        }
+        // Verificar que de verdad sea una imagen
+        if (@getimagesize($file['tmp_name']) === false) {
+            return [false, 'El archivo no es una imagen válida', ''];
         }
 
-        $destFolder = $this->uploadFolder . DIRECTORY_SEPARATOR . $subfolder;
-        if (!is_dir($destFolder)) {
-            mkdir($destFolder, 0755, true);
+        $dest = $this->uploadFolder . DIRECTORY_SEPARATOR . $subfolder;
+        if (!is_dir($dest)) {
+            mkdir($dest, 0755, true);
         }
-
-        $fileName = bin2hex(random_bytes(16)) . '.' . $ext;
-        $fullPath = $destFolder . DIRECTORY_SEPARATOR . $fileName;
-
-        // move_uploaded_file() solo funciona con archivos subidos "de verdad"
-        // por el SAPI de PHP (is_uploaded_file() debe ser true). Los PUT con
-        // multipart/form-data se parsean a mano (ver MultipartParser) y el
-        // archivo temporal resultante NO cuenta como "uploaded" para PHP,
-        // así que en ese caso hay que usar rename() en su lugar.
-        if (is_uploaded_file($file['tmp_name'])) {
-            $moved = move_uploaded_file($file['tmp_name'], $fullPath);
-        } else {
-            $moved = rename($file['tmp_name'], $fullPath);
-        }
-
+        $name = bin2hex(random_bytes(16));
+        $tmpPath = $dest . DIRECTORY_SEPARATOR . $name . '.upload';
+        $moved = is_uploaded_file($file['tmp_name']) ? move_uploaded_file($file['tmp_name'], $tmpPath) : @rename($file['tmp_name'], $tmpPath);
         if (!$moved) {
             return [false, 'No se pudo guardar el archivo', ''];
         }
+
+        // Optimizar (WebP/JPEG, máx. 1800 px). Si GD no está disponible se guarda tal cual.
+        $finalExt = $this->images->optimizeUpload($tmpPath) ?? ($ext === 'jpeg' ? 'jpg' : $ext);
+        $fileName = "$name.$finalExt";
+        rename($tmpPath, $dest . DIRECTORY_SEPARATOR . $fileName);
+        @chmod($dest . DIRECTORY_SEPARATOR . $fileName, 0644);
 
         return [true, '', "/uploads/$subfolder/$fileName"];
     }
@@ -75,15 +62,14 @@ class FileStorageService
         if (!$relativeUrl) {
             return;
         }
-
         $relative = ltrim($relativeUrl, '/');
-        if (!str_starts_with($relative, 'uploads/')) {
+        if (!str_starts_with($relative, 'uploads/') || str_contains($relative, '..')) {
             return;
         }
-
-        $fullPath = dirname($this->uploadFolder) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);
-        if (is_file($fullPath)) {
-            unlink($fullPath);
+        $full = dirname($this->uploadFolder) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);
+        if (is_file($full)) {
+            @unlink($full);
         }
+        $this->images->purge($relative);
     }
 }
