@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Solo en depuración: receptor para probar la escucha en segundo plano con adb. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver
+            android:name=".debug.DebugVoiceReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver"
+            xmlns:tools="http://schemas.android.com/tools" />
+    </application>
+</manifest>
