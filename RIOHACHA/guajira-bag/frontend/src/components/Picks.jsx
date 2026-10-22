@@ -1,20 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Plus } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import { getProductos, getResumenResenas } from '../api';
 import { adaptProduct } from '../lib/product';
-import { fmt } from '../data';
 import Img from './Img';
-import Stars from './Stars';
+import ProductCard from './ProductCard';
 
 /**
- * Inicio · "Elegidas para ti": un adelanto del catálogo, no el catálogo completo.
- * Una pieza protagonista (la mejor calificada), tres piezas más y una tarjeta velada
- * que invita a descubrir el resto ("+27 piezas te esperan").
+ * Inicio · "Elegidas para ti": un adelanto del catálogo con las mismas tarjetas del catálogo.
+ * Cuatro piezas (las mejor calificadas primero) y una tarjeta velada que invita a ver el resto.
  */
 export default function Picks({ onAdd }) {
   const [data, setData] = useState(null);
-  const [added, setAdded] = useState(null);
+  const nav = useNavigate();
 
   useEffect(() => {
     getProductos(1, 8, true, { orden: 'recientes' })
@@ -32,25 +30,6 @@ export default function Picks({ onAdd }) {
   if (data && data.items.length === 0) return null;
   const items = data?.items || [];
   const resto = Math.max(0, (data?.total || 0) - items.length);
-  const add = (p) => { onAdd?.(p); setAdded(p.id); setTimeout(() => setAdded(null), 1400); };
-
-  const Tarjeta = ({ p, grande }) => (
-    <article className={`pk${grande ? ' pk--big' : ''}`}>
-      <Link to={`/catalogo?p=${p.id}`} className="pk__arch" aria-label={`Ver ${p.name}`}>
-        <Img src={p.photos[0]} alt={p.name} w={grande ? 960 : 480} widths={grande ? [640, 960] : [320, 480]} sizes={grande ? '(max-width: 700px) 92vw, 46vw' : '(max-width: 700px) 46vw, 22vw'} />
-        {p.photos[1] && <Img src={p.photos[1]} alt="" w={grande ? 960 : 480} widths={grande ? [640, 960] : [320, 480]} sizes={grande ? '46vw' : '22vw'} className="pk__b" />}
-        {grande && <span className="pk__badge">La favorita</span>}
-      </Link>
-      <button type="button" className={`pk__add${added === p.id ? ' ok' : ''}`} onClick={() => add(p)} aria-label={`Agregar ${p.name} al carrito`}>
-        {added === p.id ? '✓' : <Plus size={18} />}
-      </button>
-      <Link to={`/catalogo?p=${p.id}`} className="pk__info">
-        <h3>{p.name}</h3>
-        {data.ratings[p.id]?.total > 0 && <span className="pk__rate"><Stars value={data.ratings[p.id].promedio} size={12} /><small>({data.ratings[p.id].total})</small></span>}
-        <b>{fmt(p.price)}</b>
-      </Link>
-    </article>
-  );
 
   return (
     <section className="picks">
@@ -62,24 +41,30 @@ export default function Picks({ onAdd }) {
           </div>
           <p>Las favoritas de nuestras clientas. Cada una es única: cuando se va, no vuelve igual.</p>
         </div>
-        {!data ? (
-          <div className="picks__grid">{Array.from({ length: 5 }, (_, k) => <div key={k} className={`pk pk--skel${k === 0 ? ' pk--big' : ''}`}><span className="pk__arch"><span className="skel" /></span></div>)}</div>
-        ) : (
-          <div className="picks__grid">
-            <Tarjeta p={items[0]} grande />
-            {items.slice(1).map((p) => <Tarjeta key={p.id} p={p} />)}
-            <Link to="/catalogo" className="pk pk--more" aria-label="Ver todo el catálogo">
-              <span className="pk__arch">
-                {data.velo && <Img src={data.velo.photos[0]} alt="" w={320} widths={[320]} sizes="22vw" />}
-                <span className="pk__veil">
-                  <b>{resto > 0 ? `+${resto}` : '+'}</b>
-                  <span>{resto === 1 ? 'pieza más te espera' : 'piezas más te esperan'}</span>
-                  <em>Ver el catálogo <ArrowRight size={15} /></em>
-                </span>
-              </span>
-            </Link>
-          </div>
-        )}
+        <div className="picks__grid">
+          {!data
+            ? Array.from({ length: 5 }, (_, k) => <div key={k} className="qcard"><div className="qcard__img"><span className="skel" /></div><div className="qcard__body" style={{ height: 84 }} /></div>)
+            : (
+              <>
+                {items.map((p, k) => (
+                  <ProductCard key={p.id} item={p} idx={k} rating={data.ratings[p.id]} onAdd={onAdd} onSelect={(x) => nav(`/catalogo?p=${x.id}`)} />
+                ))}
+                <Link to="/catalogo" className="qcard qcard--more" aria-label="Ver todo el catálogo">
+                  <div className="qcard__img">
+                    {data.velo && <Img src={data.velo.photos[0]} alt="" w={320} widths={[320]} sizes="23vw" />}
+                    <span className="qcard__veil">
+                      <b>{resto > 0 ? `+${resto}` : '+'}</b>
+                      <span>{resto === 1 ? 'pieza más te espera' : 'piezas más te esperan'}</span>
+                    </span>
+                  </div>
+                  <div className="qcard__body">
+                    <h3>Ver todo el catálogo</h3>
+                    <span className="qcard__go">Descubrir <ArrowRight size={16} /></span>
+                  </div>
+                </Link>
+              </>
+            )}
+        </div>
       </div>
     </section>
   );
