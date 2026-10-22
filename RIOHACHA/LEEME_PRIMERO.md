@@ -1,4 +1,4 @@
-# Guajira Bags v3.3 — cómo instalar
+# Guajira Bags v3.8 — cómo instalar
 
 ## 1. API (Administrador de archivos del hosting)
 1. Haz una copia de seguridad de tu carpeta `php-api` actual.

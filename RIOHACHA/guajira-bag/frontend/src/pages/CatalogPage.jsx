@@ -1,6 +1,6 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ChevronDown, ChevronLeft, ChevronRight, MessageCircle, Plus, Search, ShoppingBag, X, ZoomIn } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MessageCircle, Search, ShoppingCart, X, ZoomIn } from 'lucide-react';
 import Seo from '../components/Seo';
 import Img from '../components/Img';
 import Stars from '../components/Stars';
@@ -10,37 +10,32 @@ import { getProducto, getProductos, getResumenResenas } from '../api';
 import { thumb, toMediaUrl } from '../config';
 import { WA_NUMBER, fmt } from '../data';
 import { useSnapTrack } from '../hooks/useSnapTrack';
+import ProductCard from '../components/ProductCard';
 import { adaptProduct } from '../lib/product';
 
 export { adaptProduct };
 
-const PAGE = 21;
-const ORDERS = [['recientes', 'lo más nuevo'], ['precio_asc', 'menor precio'], ['precio_desc', 'mayor precio']];
-const RANGES = [['', 'cualquier precio', null, null], ['a', 'hasta $150.000', null, 150000], ['b', '$150.000 a $250.000', 150000, 250000], ['c', 'más de $250.000', 250000, null]];
+const PAGE_SIZE = 20;
 
-// ── Caché en memoria: volver al catálogo o repetir una búsqueda es instantáneo ──
+// ── Caché en memoria: volver a una página o repetir una búsqueda es instantáneo ──
 const cache = new Map();
 let legacyAll = null; // por si la API del servidor aún es la versión anterior (sin búsqueda en servidor)
 
-async function fetchPage(page, f, signal) {
-  const key = JSON.stringify([page, f]);
+async function fetchPage(page, q) {
+  const key = `${page}|${q}`;
   if (cache.has(key)) return cache.get(key);
-  const data = await getProductos(page, PAGE, true, { ...f, signal });
+  const data = await getProductos(page, PAGE_SIZE, true, q ? { q } : {});
   let out;
-  const filtra = f.q || f.min || f.max || (f.orden && f.orden !== 'recientes');
-  if (data.porPagina === undefined && filtra) {
+  if (q && data.porPagina === undefined) {
     if (!legacyAll) {
-      const first = await getProductos(1, 100, true, { signal });
+      const first = await getProductos(1, 100, true);
       let all = first.items;
-      for (let p = 2; p <= first.totalPaginas; p++) all = all.concat((await getProductos(p, 100, true, { signal })).items);
+      for (let p = 2; p <= first.totalPaginas; p++) all = all.concat((await getProductos(p, 100, true)).items);
       legacyAll = all;
     }
     const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    let list = legacyAll.filter((p) => (!f.q || norm(`${p.nombre} ${p.descripcion} ${p.codigo || ''}`).includes(norm(f.q)))
-      && (f.min == null || p.precio >= f.min) && (f.max == null || p.precio <= f.max));
-    if (f.orden === 'precio_asc') list = [...list].sort((a, b) => a.precio - b.precio);
-    if (f.orden === 'precio_desc') list = [...list].sort((a, b) => b.precio - a.precio);
-    out = { items: list.slice((page - 1) * PAGE, page * PAGE), total: list.length, totalPaginas: Math.max(1, Math.ceil(list.length / PAGE)) };
+    const list = legacyAll.filter((p) => norm(`${p.nombre} ${p.descripcion} ${p.codigo || ''}`).includes(norm(q)));
+    out = { items: list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), total: list.length, totalPaginas: Math.max(1, Math.ceil(list.length / PAGE_SIZE)) };
   } else {
     out = { items: data.items, total: data.total, totalPaginas: data.totalPaginas };
   }
@@ -48,73 +43,6 @@ async function fetchPage(page, f, signal) {
   cache.set(key, out);
   return out;
 }
-
-function useDebounced(v, ms) {
-  const [d, setD] = useState(v);
-  useEffect(() => { const t = setTimeout(() => setD(v), ms); return () => clearTimeout(t); }, [v, ms]);
-  return d;
-}
-
-/** Palabra desplegable dentro de la frase de filtros: "Mostrar mochilas de [cualquier precio]…" */
-function Pick({ value, options, onChange, label }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  useEffect(() => {
-    if (!open) return undefined;
-    const off = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
-    const esc = (e) => e.key === 'Escape' && setOpen(false);
-    document.addEventListener('pointerdown', off);
-    document.addEventListener('keydown', esc);
-    return () => { document.removeEventListener('pointerdown', off); document.removeEventListener('keydown', esc); };
-  }, [open]);
-  const cur = options.find((o) => o[0] === value) || options[0];
-  return (
-    <span ref={ref} className={`pick${open ? ' open' : ''}`}>
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="listbox" aria-expanded={open} aria-label={label}>
-        {cur[1]}<ChevronDown size={16} />
-      </button>
-      {open && (
-        <span className="pick__menu" role="listbox">
-          {options.map((o) => (
-            <button key={o[0] || 'x'} type="button" role="option" aria-selected={o[0] === value} className={o[0] === value ? 'on' : ''} onClick={() => { onChange(o[0]); setOpen(false); }}>{o[1]}</button>
-          ))}
-        </span>
-      )}
-    </span>
-  );
-}
-
-/** Tarjeta "arco": la foto vive en un arco, con etiqueta colgante de precio y segunda foto al pasar el mouse. */
-const Card = memo(function Card({ item, i, rating, onOpen, onAdd }) {
-  const [added, setAdded] = useState(false);
-  const second = item.photos[1];
-  const prefetch = () => { if (item.photos[0]) { const im = new Image(); im.src = thumb(item.photos[0], 960); } };
-  return (
-    <article className={`vcard${second ? ' has2' : ''}`} style={{ '--i': i % 10 }} onMouseEnter={prefetch}>
-      <div className="vcard__top">
-        <button type="button" className="vcard__frame" onClick={() => onOpen(item)} onFocus={prefetch} aria-label={`Ver ${item.name}`}>
-          <Img src={item.photos[0]} alt={item.name} w={480} widths={[320, 480, 640]} sizes="(max-width: 700px) 48vw, (max-width: 1100px) 31vw, 22vw" eager={i < 4} className="vcard__a" />
-          {second && <Img src={second} alt="" w={480} widths={[320, 480, 640]} sizes="(max-width: 700px) 48vw, 22vw" className="vcard__b" />}
-          <span className="vcard__see">Ver detalle</span>
-        </button>
-        <span className="vcard__tag" aria-hidden="true"><i />{fmt(item.price)}</span>
-        <button
-          type="button"
-          className={`vcard__add${added ? ' ok' : ''}`}
-          onClick={() => { onAdd(item); setAdded(true); setTimeout(() => setAdded(false), 1400); }}
-          aria-label={`Agregar ${item.name} al carrito`}
-        >
-          {added ? '✓' : <Plus size={18} />}
-        </button>
-      </div>
-      <div className="vcard__info">
-        <h3>{item.name}</h3>
-        {rating?.total > 0 && <span className="vcard__rate"><Stars value={rating.promedio} size={12} /><small>({rating.total})</small></span>}
-        <p>{item.desc}</p>
-      </div>
-    </article>
-  );
-});
 
 /** Zoom a pantalla completa: la foto se ve completa; al tocarla se acerca y sigue el puntero. */
 function Zoom({ photos, start, name, onClose }) {
@@ -143,7 +71,7 @@ function Zoom({ photos, start, name, onClose }) {
             onClick={(e) => setZ((v) => (v ? null : at(e)))}
             onPointerMove={(e) => { if (z && e.pointerType === 'mouse') setZ(at(e)); }}
           >
-            {Math.abs(k - idx) <= 1 && <Img src={ph} alt={k === 0 ? name : ''} w={1280} widths={[960, 1280]} sizes="100vw" eager={k === idx} className="contain" />}
+            {Math.abs(k - idx) <= 1 && <Img src={ph} alt={k === 0 ? name : ''} full eager={k === idx} className="contain" />}
           </div>
         ))}
       </div>
@@ -159,176 +87,135 @@ function Zoom({ photos, start, name, onClose }) {
   );
 }
 
-/** Ficha: panel lateral en computador, hoja inferior en celular. La foto se ve completa. */
-function Sheet({ product, onClose, onAdd }) {
+function ProductModal({ product, onClose, onAdd }) {
   const [idx, setIdx] = useState(0);
   const [zoomAt, setZoomAt] = useState(null);
   const [added, setAdded] = useState(false);
-  const photos = product.photos.length ? product.photos : [null];
-  const { ref, goTo, onScroll } = useSnapTrack(idx, setIdx, photos.length);
+  const images = product.photos.length ? product.photos : [null];
 
   useEffect(() => {
     const onKey = (e) => {
       if (zoomAt !== null) return;
       if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowRight') goTo(idx + 1);
-      if (e.key === 'ArrowLeft') goTo(idx - 1);
+      if (e.key === 'ArrowRight') setIdx((i) => (i + 1) % images.length);
+      if (e.key === 'ArrowLeft') setIdx((i) => (i - 1 + images.length) % images.length);
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [idx, goTo, onClose, zoomAt]);
+  }, [onClose, zoomAt, images.length]);
   useEffect(() => {
     document.documentElement.style.overflow = 'hidden';
     return () => { document.documentElement.style.overflow = ''; };
   }, []);
 
-  const wa = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`¡Hola! Me interesa la *${product.name}*${product.codigo ? ` (código ${product.codigo})` : ''} — ${fmt(product.price)}. ¿Está disponible?`)}`;
+  const handleAdd = () => { onAdd(product); setAdded(true); setTimeout(() => setAdded(false), 1800); };
+  const wa = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hola! Me interesa la *${product.name}*${product.codigo ? ` (código ${product.codigo})` : ''} (${fmt(product.price)}). ¿Está disponible?`)}`;
 
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label={product.name}>
-      <button type="button" className="sheet__veil" onClick={onClose} aria-label="Cerrar" tabIndex={-1} />
-      <div className="sheet__panel">
-        <button type="button" className="sheet__close" onClick={onClose} aria-label="Cerrar"><X size={18} /></button>
-        <div className="sheet__media">
-          <div ref={ref} className="sheet__track" onScroll={onScroll}>
-            {photos.map((ph, k) => (
-              <button key={ph || k} type="button" className="sheet__slide" onClick={() => ph && setZoomAt(k)} aria-label="Ver foto en grande">
-                <Img src={ph} alt={k === 0 ? product.name : ''} w={960} widths={[640, 960, 1280]} sizes="(max-width: 900px) 100vw, 50vw" eager={k === 0} className="contain" />
-              </button>
-            ))}
+    <div className="pmodal-veil" onClick={(e) => e.target === e.currentTarget && onClose()} role="presentation">
+      <div className="pmodal" role="dialog" aria-modal="true" aria-label={product.name}>
+        <button type="button" className="pmodal__close" onClick={onClose} aria-label="Cerrar"><X size={16} /></button>
+        <div className="pmodal__gallery">
+          <div className="pmodal__stage">
+            <button type="button" className="pmodal__photo" onClick={() => images[idx] && setZoomAt(idx)} aria-label="Ver foto en grande">
+              <Img key={idx} src={images[idx]} alt={product.name} full eager className="contain" />
+            </button>
+            <span className="pmodal__zoomhint"><ZoomIn size={13} /> Toca para ampliar</span>
+            {images.length > 1 && (
+              <>
+                <button type="button" className="pmodal__nav l" onClick={(e) => { e.stopPropagation(); setIdx((idx - 1 + images.length) % images.length); }} aria-label="Anterior"><ChevronLeft size={18} /></button>
+                <button type="button" className="pmodal__nav r" onClick={(e) => { e.stopPropagation(); setIdx((idx + 1) % images.length); }} aria-label="Siguiente"><ChevronRight size={18} /></button>
+              </>
+            )}
           </div>
-          <span className="sheet__zoomhint"><ZoomIn size={14} /> Toca para ampliar</span>
-          {photos.length > 1 && (
-            <>
-              <button type="button" className="sheet__nav l" onClick={() => goTo(idx - 1)} aria-label="Foto anterior"><ChevronLeft size={20} /></button>
-              <button type="button" className="sheet__nav r" onClick={() => goTo(idx + 1)} aria-label="Foto siguiente"><ChevronRight size={20} /></button>
-              <div className="sheet__dots">{photos.map((_, k) => <button key={k} type="button" className={k === idx ? 'on' : ''} onClick={() => goTo(k)} aria-label={`Foto ${k + 1}`} />)}</div>
-            </>
-          )}
-        </div>
-        <div className="sheet__info">
-          <span className="sheet__kicker">Artesanía Wayuu · Pieza única</span>
-          <h2>{product.name}</h2>
-          {product.codigo && <p className="sheet__code">Código {product.codigo}</p>}
-          <p className="sheet__price">{fmt(product.price)}</p>
-          {photos.length > 1 && (
-            <div className="sheet__thumbs">
-              {photos.map((ph, k) => (
-                <button key={ph || k} type="button" className={k === idx ? 'on' : ''} onClick={() => goTo(k)} aria-label={`Ver foto ${k + 1}`}>
-                  <img src={thumb(ph, 160)} alt="" loading="lazy" decoding="async" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = toMediaUrl(ph); }} />
+          {images.length > 1 && (
+            <div className="pmodal__thumbs">
+              {images.map((im, i) => (
+                <button key={im + i} type="button" className={i === idx ? 'active' : ''} onClick={() => setIdx(i)}>
+                  <img src={thumb(im, 320)} alt="" loading="lazy" decoding="async" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = toMediaUrl(im); }} />
                 </button>
               ))}
             </div>
           )}
-          <p className="sheet__desc">{product.details}</p>
-          <ul className="sheet__promise">
+        </div>
+        <div className="pmodal__info">
+          <span className="pmodal__tag">Artesanía Wayuu · Pieza única</span>
+          {product.codigo && <p className="pmodal__code">Código: {product.codigo}</p>}
+          <h2>{product.name}</h2>
+          <div className="pmodal__prices">
+            <span className="pmodal__price">{fmt(product.price)}</span>
+          </div>
+          <p className="pmodal__desc">{product.details}</p>
+          <ul className="pmodal__promise">
             <li>Tejida a mano en La Guajira</li>
             <li>Envíos a toda Colombia</li>
             <li>Pedido y pago por WhatsApp</li>
           </ul>
-          <div className="sheet__actions">
-            <button type="button" className={`btn btn--gold${added ? ' added' : ''}`} onClick={() => { onAdd(product); setAdded(true); setTimeout(() => setAdded(false), 1800); }}>
-              <ShoppingBag size={16} />{added ? '¡Agregada al carrito!' : 'Agregar al carrito'}
+          <div className="pmodal__actions">
+            <button type="button" className={`btn btn--gold${added ? ' added' : ''}`} onClick={handleAdd}>
+              <ShoppingCart size={16} />{added ? '¡Agregado al carrito!' : 'Agregar al carrito'}
             </button>
-            <a href={wa} target="_blank" rel="noreferrer" className="btn btn--wa"><MessageCircle size={16} />Preguntar por WhatsApp</a>
+            <a href={wa} target="_blank" rel="noreferrer" className="btn btn--wa"><MessageCircle size={16} />Consultar por WhatsApp</a>
           </div>
           <Reviews productId={product.id} productName={product.name} />
         </div>
       </div>
-      {zoomAt !== null && <Zoom photos={photos.filter(Boolean)} start={zoomAt} name={product.name} onClose={() => setZoomAt(null)} />}
+      {zoomAt !== null && <Zoom photos={images.filter(Boolean)} start={zoomAt} name={product.name} onClose={() => setZoomAt(null)} />}
     </div>
-  );
-}
-
-function Pager({ page, pages, onGo }) {
-  if (pages <= 1) return null;
-  const nums = [];
-  for (let p = 1; p <= pages; p++) {
-    if (p === 1 || p === pages || Math.abs(p - page) <= 1) nums.push(p);
-    else if (nums[nums.length - 1] !== '…') nums.push('…');
-  }
-  return (
-    <nav className="pager2" aria-label="Páginas del catálogo">
-      <button type="button" className="pager2__arrow" disabled={page === 1} onClick={() => onGo(page - 1)}><ChevronLeft size={18} />Anterior</button>
-      <span className="pager2__nums">
-        {nums.map((n, k) => (n === '…'
-          ? <span key={`d${k}`} className="pager2__dots">…</span>
-          : <button key={n} type="button" aria-current={n === page ? 'page' : undefined} onClick={() => onGo(n)}>{n}</button>))}
-      </span>
-      <button type="button" className="pager2__arrow" disabled={page === pages} onClick={() => onGo(page + 1)}>Siguiente<ChevronRight size={18} /></button>
-    </nav>
   );
 }
 
 export default function CatalogPage({ onAdd }) {
   const [params, setParams] = useSearchParams();
-  const [q, setQ] = useState(params.get('q') || '');
-  const [orden, setOrden] = useState(params.get('orden') || 'recientes');
-  const [rango, setRango] = useState(params.get('precio') || '');
+  const [search, setSearch] = useState(params.get('q') || '');
+  const [q, setQ] = useState(search.trim());
   const [page, setPage] = useState(Math.max(1, parseInt(params.get('pag') || '1', 10) || 1));
-  const [retry, setRetry] = useState(0);
-  const dq = useDebounced(q.trim(), 350);
-  const [items, setItems] = useState([]);
-  const [meta, setMeta] = useState({ total: 0, totalPaginas: 1 });
-  const [status, setStatus] = useState('loading');
+  const [products, setProducts] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [ratings, setRatings] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [retry, setRetry] = useState(0);
   const [selected, setSelected] = useState(null);
-  const [showFloat, setShowFloat] = useState(false);
   const topRef = useRef(null);
-  const searchRef = useRef(null);
-  const first = useRef(true);
 
-  const filtros = useMemo(() => {
-    const r = RANGES.find((x) => x[0] === rango) || RANGES[0];
-    return { q: dq || undefined, orden, min: r[2] ?? undefined, max: r[3] ?? undefined };
-  }, [dq, orden, rango]);
+  // Búsqueda en el servidor (en todo el catálogo, no solo en la página actual)
+  useEffect(() => {
+    const t = setTimeout(() => { if (search.trim() !== q) { setQ(search.trim()); setPage(1); } }, 350);
+    return () => clearTimeout(t);
+  }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Volver a la página 1 cuando cambian los filtros
-  const fkey = JSON.stringify(filtros);
-  const prevKey = useRef(fkey);
-  useEffect(() => { if (prevKey.current !== fkey) { prevKey.current = fkey; setPage(1); } }, [fkey]);
-
-  // Filtros y página en la URL (se pueden compartir y sobreviven al recargar)
   useEffect(() => {
     const next = new URLSearchParams(window.location.search);
-    if (dq) next.set('q', dq); else next.delete('q');
-    if (orden !== 'recientes') next.set('orden', orden); else next.delete('orden');
-    if (rango) next.set('precio', rango); else next.delete('precio');
+    if (q) next.set('q', q); else next.delete('q');
     if (page > 1) next.set('pag', String(page)); else next.delete('pag');
     if (next.toString() !== window.location.search.replace(/^\?/, '')) setParams(next, { replace: true });
-  }, [dq, orden, rango, page, setParams]);
+  }, [q, page, setParams]);
 
   useEffect(() => {
-    const ctrl = new AbortController();
-    if (!first.current && topRef.current) {
-      const top = topRef.current.getBoundingClientRect().top + window.scrollY - 80;
-      if (window.scrollY > top) window.scrollTo({ top, behavior: 'smooth' });
-    }
-    first.current = false;
-    setStatus('loading');
-    fetchPage(page, filtros, ctrl.signal)
-      .then((d) => {
-        if (d.totalPaginas && page > d.totalPaginas) { setPage(d.totalPaginas); return; }
-        setItems(d.items); setMeta(d); setStatus('ok');
-        const ids = d.items.map((x) => x.id).filter((id) => !(id in ratings));
-        if (ids.length) getResumenResenas(ids).then((r) => setRatings((prev) => ({ ...prev, ...r }))).catch(() => {});
+    let cancelled = false;
+    setLoading(true);
+    setError('');
+    fetchPage(page, q)
+      .then((data) => {
+        if (cancelled) return;
+        setProducts(data.items);
+        setTotal(data.total);
+        setTotalPages(data.totalPaginas);
+        const ids = data.items.map((x) => x.id).filter((id) => !(id in ratings));
+        if (ids.length) getResumenResenas(ids).then((r) => !cancelled && setRatings((prev) => ({ ...prev, ...r }))).catch(() => {});
       })
-      .catch((e) => { if (e?.code !== 'ERR_CANCELED') setStatus('error'); });
-    return () => ctrl.abort();
-  }, [filtros, page, retry]); // eslint-disable-line react-hooks/exhaustive-deps
+      .catch(() => !cancelled && setError('No se pudo cargar el catálogo. Intenta de nuevo.'))
+      .finally(() => !cancelled && setLoading(false));
+    return () => { cancelled = true; };
+  }, [page, q, retry]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Botón flotante de búsqueda al bajar
-  useEffect(() => {
-    const f = () => setShowFloat(window.scrollY > 700);
-    window.addEventListener('scroll', f, { passive: true });
-    return () => window.removeEventListener('scroll', f);
-  }, []);
-
-  // Ficha en la URL (?p=ID): enlace para compartir y el botón "atrás" la cierra
+  // Ficha abierta desde un enlace (?p=ID), por ejemplo desde "Elegidas para ti" en el inicio
   const pid = params.get('p');
   useEffect(() => {
     if (!pid) { setSelected(null); return; }
-    const found = items.find((x) => String(x.id) === pid);
+    const found = products.find((x) => String(x.id) === pid);
     if (found) setSelected(found);
     else getProducto(pid).then((p) => setSelected(adaptProduct(p))).catch(() => {});
   }, [pid]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -345,13 +232,10 @@ export default function CatalogPage({ onAdd }) {
     setParams(next, { replace: true });
   }, [setParams]);
 
-  const featured = page === 1 && !dq && !rango && orden === 'recientes' ? items[0] : null;
-  const grid = featured ? items.slice(1) : items;
-  const clear = () => { setQ(''); setRango(''); setOrden('recientes'); };
-  const goSearch = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setTimeout(() => searchRef.current?.focus({ preventScroll: true }), 450); };
+  const goTo = (p) => { setPage(p); topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
   return (
-    <div className="vitrina">
+    <div className="catalog-page">
       <Seo
         path="/catalogo"
         title="Catálogo de Mochilas Wayuu"
@@ -359,62 +243,54 @@ export default function CatalogPage({ onAdd }) {
         keywords="catálogo mochilas wayuu, comprar mochila wayuu, mochilas wayuu precios, mochilas guajira bags"
       />
       <div className="wrap">
-        <header className="cat-hero">
-          <div className="cat-hero__title">
-            <span className="eyebrow">Nuestras mochilas</span>
-            <h1 className="h-display">Catálogo</h1>
-            <p>{status === 'error' ? 'Piezas únicas tejidas a mano' : status === 'loading' && !items.length ? 'Cargando piezas…' : `${meta.total} ${meta.total === 1 ? 'pieza única' : 'piezas únicas'} tejidas a mano`}</p>
+        <div ref={topRef} className="catalog-head">
+          <span className="eyebrow">Nuestras mochilas</span>
+          <h1 className="h-display">Catálogo</h1>
+          <p className="sub">Tejida a mano por artesanas Wayuu de La Guajira</p>
+          <div className="catalog-tools">
+            <div className="catalog-search">
+              <Search size={16} />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar mochila…" aria-label="Buscar mochila" />
+              {search && <button type="button" className="catalog-search__clear" onClick={() => setSearch('')} aria-label="Borrar búsqueda"><X size={14} /></button>}
+            </div>
+            {!error && <span className="catalog-count"><b>{total}</b> {total === 1 ? 'producto' : 'productos'}{totalPages > 1 && ` · Pág ${page}/${totalPages}`}</span>}
           </div>
-          <div className="cat-hero__find">
-            <label className="seek">
-              <input ref={searchRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder="¿Qué mochila buscas?" aria-label="Buscar mochila por nombre, color o código" />
-              {q ? <button type="button" onClick={() => setQ('')} aria-label="Borrar búsqueda"><X size={18} /></button> : <span aria-hidden="true"><Search size={18} /></span>}
-              <i aria-hidden="true" />
-            </label>
-            <p className="phrase">
-              Mostrar mochilas de <Pick value={rango} options={RANGES} onChange={setRango} label="Rango de precio" /> ordenadas por <Pick value={orden} options={ORDERS} onChange={setOrden} label="Orden" />
-            </p>
-          </div>
-        </header>
+        </div>
         <Benefits />
 
-        <div ref={topRef} className="cat-anchor" />
-        {status === 'loading' && !items.length ? (
-          <div className="vgrid">{Array.from({ length: 8 }, (_, i) => <div key={i} className="vcard vcard--skel"><div className="vcard__top"><span className="vcard__frame"><span className="skel" /></span></div><span className="skel-line" /><span className="skel-line short" /></div>)}</div>
-        ) : status === 'error' ? (
-          <div className="vstate"><p>No pudimos cargar el catálogo.</p><small>Revisa tu conexión e inténtalo de nuevo en unos segundos.</small><button type="button" className="btn btn--line" onClick={() => setRetry((n) => n + 1)}>Intentar de nuevo</button></div>
-        ) : items.length === 0 ? (
-          <div className="vstate"><p>No encontramos mochilas con esa búsqueda.</p><button type="button" className="btn btn--gold" onClick={clear}>Ver todo el catálogo</button></div>
+        {loading && products.length === 0 ? (
+          <div className="catalog-grid">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="qcard"><div className="qcard__img"><span className="skel" /></div><div className="qcard__body" style={{ height: 84 }} /></div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="catalog-state err"><p>{error}</p><button type="button" className="btn btn--line" onClick={() => setRetry((n) => n + 1)}>Intentar de nuevo</button></div>
+        ) : products.length === 0 ? (
+          <p className="catalog-empty">No encontramos mochilas con ese criterio.</p>
         ) : (
-          <div className={status === 'loading' ? 'is-busy' : undefined}>
-            {featured && (
-              <section className="vfeat" aria-label="Pieza destacada">
-                <button type="button" className="vfeat__media" onClick={() => open(featured)} aria-label={`Ver ${featured.name}`}>
-                  <Img src={featured.photos[0]} alt={featured.name} w={960} widths={[640, 960, 1280]} sizes="(max-width: 900px) 100vw, 46vw" eager />
-                  {featured.photos[1] && <Img src={featured.photos[1]} alt="" w={320} widths={[320, 480]} sizes="160px" className="vfeat__mini" />}
-                </button>
-                <div className="vfeat__info">
-                  <span className="vfeat__badge">Recién llegada</span>
-                  <h2>{featured.name}</h2>
-                  {ratings[featured.id]?.total > 0 && <span className="vcard__rate"><Stars value={ratings[featured.id].promedio} size={14} /><small>({ratings[featured.id].total})</small></span>}
-                  <p>{featured.desc}</p>
-                  <p className="vfeat__price">{fmt(featured.price)}</p>
-                  <div className="vfeat__cta">
-                    <button type="button" className="btn btn--gold btn--xl" onClick={() => open(featured)}>La quiero ver</button>
-                    <button type="button" className="btn btn--line btn--xl" onClick={() => onAdd(featured)}><ShoppingBag size={16} />Al carrito</button>
-                  </div>
-                </div>
-              </section>
-            )}
-            <div className="vgrid">
-              {grid.map((item, i) => <Card key={item.id} item={item} i={i} rating={ratings[item.id]} onOpen={open} onAdd={onAdd} />)}
+          <div className={loading ? 'is-busy' : undefined}>
+            <div className="catalog-grid">
+              {products.map((item, idx) => <ProductCard key={item.id} item={item} idx={idx} rating={ratings[item.id]} onSelect={open} onAdd={onAdd} />)}
             </div>
-            <Pager page={page} pages={meta.totalPaginas} onGo={setPage} />
+            {totalPages > 1 && (
+              <div className="pager">
+                <button type="button" onClick={() => goTo(page - 1)} disabled={page === 1}>← Anterior</button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                  const show = p === 1 || p === totalPages || Math.abs(p - page) <= 1;
+                  const dot = !show && (p === 2 || p === totalPages - 1);
+                  if (dot) return <span key={p} className="dots">…</span>;
+                  if (!show) return null;
+                  return <button key={p} type="button" aria-current={p === page} onClick={() => goTo(p)}>{p}</button>;
+                })}
+                <button type="button" onClick={() => goTo(page + 1)} disabled={page === totalPages}>Siguiente →</button>
+              </div>
+            )}
           </div>
         )}
       </div>
-      <button type="button" className={`seek-fab${showFloat ? ' on' : ''}`} onClick={goSearch} aria-label="Buscar"><Search size={20} /></button>
-      {selected && <Sheet key={selected.id} product={selected} onClose={close} onAdd={onAdd} />}
+
+      {selected && <ProductModal key={selected.id} product={selected} onClose={close} onAdd={onAdd} />}
     </div>
   );
 }

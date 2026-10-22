@@ -5,7 +5,7 @@ namespace GuajiraBags\Services;
 /**
  * Optimización de imágenes con GD (viene en casi todos los hostings).
  *
- * - optimizeUpload(): al subir una foto la endereza (EXIF), la limita a 1800 px y la guarda en WebP
+ * - optimizeUpload(): al subir una foto la endereza (EXIF), la limita a 2000 px y la guarda en WebP
  *   (o JPEG si el servidor no tiene WebP). Una foto de celular de 4 MB queda en ~200 KB.
  * - thumbnail(): genera versiones pequeñas bajo demanda (/img/400/uploads/...) y las guarda en caché
  *   en public/img/. La siguiente visita la sirve Apache directamente, sin pasar por PHP.
@@ -13,7 +13,7 @@ namespace GuajiraBags\Services;
 class ImageService
 {
     public const WIDTHS = [160, 320, 480, 640, 960, 1280];
-    private const MAX_SIDE = 1800;
+    private const MAX_SIDE = 2000;
 
     public function __construct(private string $publicDir) {}
 
@@ -39,7 +39,7 @@ class ImageService
         }
         $img = $this->fit($img, self::MAX_SIDE);
         $ext = self::webp() ? 'webp' : 'jpg';
-        $ok = $this->save($img, $path . '.tmp', $ext, 80);
+        $ok = $this->save($img, $path . '.tmp', $ext, 88);
         imagedestroy($img);
         if (!$ok) {
             @unlink($path . '.tmp');
@@ -82,7 +82,7 @@ class ImageService
         if (!is_dir(dirname($cache))) {
             @mkdir(dirname($cache), 0755, true);
         }
-        $ok = $this->save($img, $cache . '.tmp', $ext, $width <= 480 ? 74 : 78);
+        $ok = $this->save($img, $cache . '.tmp', $ext, $width <= 480 ? 84 : 86);
         imagedestroy($img);
         if ($ok && @rename($cache . '.tmp', $cache)) {
             return [$cache, $type];

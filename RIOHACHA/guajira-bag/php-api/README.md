@@ -3,7 +3,7 @@
 ## Qué hace
 - **Miniaturas automáticas** `/img/{ancho}/uploads/...` (WebP). La primera vez las genera PHP;
   después Apache las sirve directo desde `public/img/` con caché de 1 año.
-- **Fotos nuevas optimizadas al subirlas**: enderezadas, máx. 1800 px, WebP (~200 KB).
+- **Fotos nuevas optimizadas al subirlas**: enderezadas, máx. 2000 px, WebP de alta calidad.
 - **Productos**: búsqueda `q`, orden `orden=recientes|precio_asc|precio_desc|nombre`, precio `min`/`max`,
   campo `codigo`, `fotos` con id; una sola consulta para todas las fotos de la página.
 - **Reseñas** compatibles con tu tabla actual: de una mochila o **de la tienda** (sin producto), y gestión desde el panel.
