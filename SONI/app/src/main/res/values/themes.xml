@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fondo oscuro desde el arranque para evitar un destello blanco antes de Compose. -->
+    <style name="Theme.SONI" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#FF070B16</item>
+    </style>
+</resources>

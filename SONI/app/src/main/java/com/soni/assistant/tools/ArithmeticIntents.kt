@@ -1,0 +1,94 @@
+package com.soni.assistant.tools
+
+import com.soni.assistant.core.Action
+import com.soni.assistant.core.IntentPriority
+import com.soni.assistant.core.IntentRule
+
+/**
+ * Reconocimiento de operaciones dichas en español. Convención numérica española: la coma es
+ * separador decimal («2,5») y el punto seguido de tres cifras separa miles («1.500» = 1500).
+ */
+object ArithmeticIntents {
+
+    val rules: List<IntentRule> = listOf(
+        // «cuánto es 2 más 3», «calcula 2 elevado a 10».
+        IntentRule(IntentPriority.EXPLICIT_COMMAND) { text ->
+            CALC_PREFIX.matchEntire(text)?.let { match ->
+                buildExpression(match.groupValues[1])?.let { Action.Calculate(it) }
+            }
+        },
+        // Una operación dicha sin prefijo: «15 por 4», «2 + 2».
+        IntentRule(IntentPriority.FALLBACK) { text ->
+            buildExpression(text)
+                ?.takeIf { BINARY_OPERATOR.containsMatchIn(it) }
+                ?.let { Action.Calculate(it) }
+        },
+    )
+
+    /**
+     * Convierte una operación en lenguaje natural a una expresión con símbolos
+     * (+ - * / ^ y paréntesis). Devuelve null si queda algo que no sea matemático.
+     * El resultado NUNCA se ejecuta como código: lo evalúa [SafeCalculator].
+     */
+    internal fun buildExpression(fragment: String): String? {
+        var e = " ${fragment.trim()} "
+        e = e.replace(LEADING_ARTICLE, " ")
+        e = e.replace(PERCENT_OF) { "(${it.groupValues[1]}/100)*" }
+        e = e.replace(PERCENT) { "(${it.groupValues[1]}/100)" }
+        for ((word, digits) in NUMBER_WORDS) {
+            e = e.replace(Regex("\\b$word\\b"), digits)
+        }
+        for ((words, symbol) in OPERATOR_WORDS) {
+            e = e.replace(Regex("\\b${Regex.escape(words)}\\b"), " $symbol ")
+        }
+        e = e.replace(TIMES_SIGN, "*").replace('÷', '/')
+        e = e.replace(THOUSANDS) { it.value.replace(".", "") }
+        e = e.replace(',', '.')
+        e = e.replace(WHITESPACE, " ").trim()
+
+        if (e.isEmpty() || !ALLOWED_EXPRESSION.matches(e) || e.none { it in '0'..'9' }) return null
+        return e
+    }
+
+    private val WHITESPACE = Regex("\\s+")
+
+    private val CALC_PREFIX = Regex(
+        "^(?:cuanto (?:es|son|da|dan|seria|serian)|dime cuanto (?:es|son)|calcula(?:me)?|calcular|resuelve|resultado de)\\s+(.+)$"
+    )
+
+    private val LEADING_ARTICLE = Regex("^\\s*(?:el|la|los|las)\\s+")
+    private val PERCENT_OF = Regex("(\\d+(?:[.,]\\d+)?)\\s*(?:por ciento|porciento|%)\\s*de\\b")
+    private val PERCENT = Regex("(\\d+(?:[.,]\\d+)?)\\s*(?:por ciento|porciento|%)")
+    private val TIMES_SIGN = Regex("(?<=[\\d)])\\s*[x×·]\\s*(?=[\\d(])")
+    private val THOUSANDS = Regex("(?<![\\d.,])[1-9]\\d{0,2}(?:\\.\\d{3})+(?![\\d.])")
+    private val ALLOWED_EXPRESSION = Regex("^[0-9.+\\-*/^()\\s]+$")
+    private val BINARY_OPERATOR = Regex("[0-9)]\\s*[+\\-*/^]")
+
+    private val NUMBER_WORDS = listOf(
+        "cero" to "0", "uno" to "1", "dos" to "2", "tres" to "3", "cuatro" to "4",
+        "cinco" to "5", "seis" to "6", "siete" to "7", "ocho" to "8", "nueve" to "9",
+        "diez" to "10", "once" to "11", "doce" to "12",
+    )
+
+    // El orden importa: las frases largas van antes que las palabras sueltas.
+    private val OPERATOR_WORDS = listOf(
+        "abre parentesis" to "(",
+        "cierra parentesis" to ")",
+        "multiplicado por" to "*",
+        "dividido entre" to "/",
+        "dividido por" to "/",
+        "dividido en" to "/",
+        "dividido" to "/",
+        "elevado a la" to "^",
+        "elevado al" to "^",
+        "elevado a" to "^",
+        "a la potencia" to "^",
+        "al cuadrado" to "^2",
+        "al cubo" to "^3",
+        "mas" to "+",
+        "menos" to "-",
+        "por" to "*",
+        "entre" to "/",
+        "sobre" to "/",
+    )
+}
