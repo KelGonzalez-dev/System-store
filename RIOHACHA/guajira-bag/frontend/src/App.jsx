@@ -91,6 +91,8 @@ function Shell() {
       <Routes>
         <Route path="/" element={<Home onAdd={addToCart} />} />
         <Route path="/catalogo" element={<CatalogPage onAdd={addToCart} />} />
+        <Route path="/catalogo/:cat" element={<CatalogPage onAdd={addToCart} />} />
+        <Route path="/mochila/:ref" element={<CatalogPage onAdd={addToCart} />} />
         <Route path="/galeria" element={<GalleryPage />} />
         <Route path="/contacto" element={<ContactPage />} />
         <Route path="/admin" element={<AdminGate user={user} onLogout={handleLogout} />} />

@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "start": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "vite build && node scripts/prerender.mjs",
+    "preview": "vite preview",
+    "build:solo": "vite build"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.2.0",

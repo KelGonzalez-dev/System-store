@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { crearResenaGeneral, getResenasRecientes } from '../api';
 import { thumb } from '../config';
 import Stars from './Stars';
+import { productPath } from '../lib/seo';
 
 const ETIQUETAS = ['', 'No me gustó', 'Regular', 'Está bien', '¡Me gustó!', '¡Me encantó!'];
 
@@ -79,7 +80,7 @@ export default function Testimonials() {
               {r.productoImagen && <img src={thumb(r.productoImagen, 160)} alt="" loading="lazy" />}
               <span>
                 <b>{r.nombre}</b>{r.ciudad ? ` · ${r.ciudad}` : ''}
-                {r.productoId ? <small>sobre <Link to={`/catalogo?p=${r.productoId}`}>{r.productoNombre}</Link></small> : <small>sobre su experiencia con Guajira Bags</small>}
+                {r.productoId ? <small>sobre <Link to={productPath({ id: r.productoId, name: r.productoNombre })}>{r.productoNombre}</Link></small> : <small>sobre su experiencia con Guajira Bags</small>}
               </span>
             </figcaption>
             {items.length > 1 && <div className="tst__dots">{items.map((x, k) => <button key={x.id} type="button" className={k === i ? 'on' : ''} onClick={() => setI(k)} aria-label={`Reseña ${k + 1}`} />)}</div>}

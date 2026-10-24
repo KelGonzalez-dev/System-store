@@ -75,6 +75,7 @@ if ($method === 'OPTIONS') {
 require $baseApi . '/src/bootstrap.php';
 
 use GuajiraBags\Controllers\AuthController;
+use GuajiraBags\Controllers\CategoriasController;
 use GuajiraBags\Controllers\GaleriaController;
 use GuajiraBags\Controllers\ImagenController;
 use GuajiraBags\Controllers\ProductosController;
@@ -84,6 +85,7 @@ use GuajiraBags\Helpers\JwtHelper;
 use GuajiraBags\Helpers\Response;
 use GuajiraBags\Schema;
 use GuajiraBags\Services\AuthService;
+use GuajiraBags\Services\CategoriaService;
 use GuajiraBags\Services\FileStorageService;
 use GuajiraBags\Services\GaleriaService;
 use GuajiraBags\Services\ImageService;
@@ -117,10 +119,33 @@ if (str_starts_with($uri, '/uploads/')) {
     exit;
 }
 
+// ── Sitemap siempre actualizado para Google ──
+if ($method === 'GET' && $uri === '/sitemap.xml') {
+    $esHttps = (($_SERVER['HTTPS'] ?? '') === 'on') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+    $apiUrl = ($esHttps ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'api.guajirabags.com');
+    (new GuajiraBags\Controllers\SitemapController(Database::get($config), rtrim($config['site_url'] ?? 'https://www.guajirabags.com', '/'), $apiUrl))->servir();
+}
+
 if (!str_starts_with($uri, '/api')) {
     Response::error('Ruta no encontrada', 404);
 }
 $path = substr($uri, 4) ?: '/';
+
+// ── Foto demasiado pesada para el límite del servidor: avisarlo claro (PHP descarta todo en silencio) ──
+$aBytes = static function (string $v): int {
+    $n = (float) $v;
+    return (int) match (strtolower(substr(trim($v), -1))) { 'g' => $n * 1073741824, 'm' => $n * 1048576, 'k' => $n * 1024, default => $n };
+};
+$limite = min($aBytes((string) ini_get('post_max_size')), $aBytes((string) ini_get('upload_max_filesize')));
+if (in_array($method, ['POST', 'PUT'], true) && $limite > 0 && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > $aBytes((string) ini_get('post_max_size'))) {
+    Response::error(sprintf('La foto pesa %.1f MB y el servidor solo permite hasta %.0f MB. Prueba con una foto más liviana.', ((int) $_SERVER['CONTENT_LENGTH']) / 1048576, $limite / 1048576), 413);
+}
+foreach ($_FILES as $f) {
+    $err = is_array($f['error'] ?? null) ? 0 : (int) ($f['error'] ?? 0);
+    if ($err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE) {
+        Response::error(sprintf('La foto supera el máximo que permite el servidor (%.0f MB). Prueba con una foto más liviana.', $limite / 1048576), 413);
+    }
+}
 
 // ── Dependencias (se crean solo cuando se usan) ──
 $db = Database::get($config);
@@ -144,6 +169,7 @@ $productos = static fn() => new ProductosController(new ProductoService($db, $st
 $galeria   = static fn() => new GaleriaController(new GaleriaService($db, $storage));
 $resenas   = static fn() => new ResenasController(new ResenaService($db));
 $auth      = static fn() => new AuthController(new AuthService($db, $config['jwt']));
+$categorias = static fn() => new CategoriasController(new CategoriaService($db));
 
 // ── Rutas: [método, patrón, protegida, acción] ──
 $routes = [
@@ -168,6 +194,12 @@ $routes = [
     ['POST',   '#^/resenas$#',                            false, fn() => $resenas()->crearGeneral()],
     ['PUT',    '#^/resenas/(\d+)$#',                      true,  fn($id) => $resenas()->actualizar((int) $id)],
     ['DELETE', '#^/resenas/(\d+)$#',                      true,  fn($id) => $resenas()->eliminar((int) $id)],
+
+    ['GET',    '#^/categorias$#',                         false, fn() => $categorias()->listar($tieneSesion())],
+    ['POST',   '#^/categorias$#',                         true,  fn() => $categorias()->crear()],
+    ['PUT',    '#^/categorias/orden$#',                   true,  fn() => $categorias()->reordenar()],
+    ['PUT',    '#^/categorias/(\d+)$#',                   true,  fn($id) => $categorias()->actualizar((int) $id)],
+    ['DELETE', '#^/categorias/(\d+)$#',                   true,  fn($id) => $categorias()->eliminar((int) $id)],
 
     ['GET',    '#^/galeria$#',                            false, fn() => $galeria()->listar()],
     ['POST',   '#^/galeria$#',                            true,  fn() => $galeria()->crear()],

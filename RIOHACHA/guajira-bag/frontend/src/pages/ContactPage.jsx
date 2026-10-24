@@ -1,5 +1,6 @@
 import { Instagram, MapPin, MessageCircle, Phone, Send } from 'lucide-react';
 import Seo from '../components/Seo';
+import { breadcrumbLd, graph, organizationLd, SITE_URL } from '../lib/seo';
 import { TikTokIcon } from '../components/Icons';
 import { WA_NUMBER } from '../data';
 import { useReveal } from '../hooks/useReveal';
@@ -28,6 +29,11 @@ export default function ContactPage() {
         title="Contacto"
         description="Contáctanos por WhatsApp o Instagram para conocer disponibilidad, precios y envíos de nuestras mochilas Wayuu artesanales."
         keywords="contacto guajira bags, comprar mochila wayuu whatsapp"
+        jsonLd={graph(
+          { '@type': 'ContactPage', name: 'Contacto Guajira Bags', url: `${SITE_URL}/contacto`, about: { '@id': `${SITE_URL}/#tienda` } },
+          organizationLd(),
+          breadcrumbLd([['Inicio', '/'], ['Contacto', '/contacto']]),
+        )}
       />
       <div className="wrap">
         <div ref={headRef} className="rv contact-head" data-v="up">

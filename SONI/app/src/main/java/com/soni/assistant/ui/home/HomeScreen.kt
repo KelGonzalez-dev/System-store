@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -52,6 +53,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -100,6 +102,12 @@ fun HomeScreen(viewModel: HomeViewModel) {
     var showMicBlocked by rememberSaveable { mutableStateOf(false) }
     var showBackgroundExplanation by rememberSaveable { mutableStateOf(false) }
     var showActionLog by rememberSaveable { mutableStateOf(false) }
+    var showContacts by rememberSaveable { mutableStateOf(false) }
+    var showSettings by rememberSaveable { mutableStateOf(false) }
+    var showProfile by rememberSaveable { mutableStateOf(false) }
+    var showMemory by rememberSaveable { mutableStateOf(false) }
+    val availability = remember { com.soni.assistant.data.settings.AvailabilitySettings.get(context) }
+    val availState by availability.state.collectAsState()
 
     // Permisos que pide una herramienta justo cuando se usa (en contexto, nunca al arrancar).
     val toolPermissionLauncher = rememberLauncherForActivityResult(
@@ -205,18 +213,52 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 .windowInsetsPadding(WindowInsets.safeDrawing)
                 .padding(horizontal = 20.dp)
         ) {
-            TopBar(
-                label = statusLabel(state.status, speaking),
-                color = statusColor(state.status, speaking),
-                onOpenLog = { showActionLog = true },
+            // Cabecera mínima: el nombre y el estado. El menú vive en los nodos que orbitan el núcleo.
+            CoreHeader(label = statusLabel(state.status, speaking), color = statusColor(state.status, speaking))
+
+            val nodes = listOf(
+                OrbitNode("Sobre ti", "\uD83D\uDC64", SoniColors.Cyan) { showProfile = true },
+                OrbitNode("Personas", "\uD83D\uDC65", SoniColors.Violet) { showContacts = true },
+                OrbitNode("Voz", "\uD83C\uDF99", SoniColors.Lavender) { showSettings = true },
+                OrbitNode("Memoria", "\uD83E\uDDE0", SoniColors.Cyan) { showMemory = true },
+                OrbitNode("Permisos", "\uD83D\uDD12", SoniColors.Violet) { showSettings = true },
+                OrbitNode("Actividad", "\u26A1", SoniColors.Lavender) { showActionLog = true },
+                OrbitNode(
+                    label = if (availState.bubble) "Burbuja: on" else "Burbuja: off",
+                    icon = "\uD83D\uDFE3",
+                    color = if (availState.bubble) SoniColors.Cyan else SoniColors.TextSecondary,
+                ) {
+                    val turnOn = !availState.bubble
+                    if (turnOn && !android.provider.Settings.canDrawOverlays(context)) {
+                        context.startActivity(
+                            Intent(
+                                android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                Uri.parse("package:${context.packageName}"),
+                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                    } else {
+                        availability.update { it.copy(bubble = turnOn) }
+                        if (turnOn) com.soni.assistant.bubble.BubbleService.start(context)
+                        else com.soni.assistant.bubble.BubbleService.stop(context)
+                    }
+                },
             )
 
+            // El núcleo con sus nodos orbitando. Se encoge cuando se abre el teclado.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
+                    .height(if (imeVisible) 110.dp else 320.dp),
                 contentAlignment = Alignment.Center,
             ) {
+                if (!imeVisible) {
+                    OrbitNodes(
+                        nodes = nodes,
+                        radius = 140.dp,
+                        paused = reduceMotion,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
                 SoniOrb(
                     state = orbState,
                     micLevel = state.micLevel,
@@ -292,6 +334,22 @@ fun HomeScreen(viewModel: HomeViewModel) {
         )
     }
 
+    if (showProfile) {
+        com.soni.assistant.ui.profile.ProfileSheet(onDismiss = { showProfile = false })
+    }
+
+    if (showMemory) {
+        com.soni.assistant.ui.profile.MemorySheet(onDismiss = { showMemory = false })
+    }
+
+    if (showSettings) {
+        com.soni.assistant.ui.settings.SettingsSheet(onDismiss = { showSettings = false })
+    }
+
+    if (showContacts) {
+        com.soni.assistant.ui.contacts.ContactRolesSheet(onDismiss = { showContacts = false })
+    }
+
     if (showActionLog) {
         ActionLogSheet(
             entries = actionLog,
@@ -362,11 +420,11 @@ fun HomeScreen(viewModel: HomeViewModel) {
 }
 
 @Composable
-private fun TopBar(label: String, color: Color, onOpenLog: () -> Unit) {
+private fun CoreHeader(label: String, color: Color) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp),
+            .padding(top = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -374,8 +432,8 @@ private fun TopBar(label: String, color: Color, onOpenLog: () -> Unit) {
             style = MaterialTheme.typography.titleLarge.merge(
                 TextStyle(
                     brush = Brush.linearGradient(listOf(SoniColors.Lavender, SoniColors.Cyan)),
-                    letterSpacing = 8.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 10.sp,
+                    fontWeight = FontWeight.Light,
                 )
             ),
             modifier = Modifier.semantics { heading() },
@@ -396,9 +454,6 @@ private fun TopBar(label: String, color: Color, onOpenLog: () -> Unit) {
             )
             Spacer(Modifier.width(8.dp))
             Text(text = label, style = MaterialTheme.typography.labelMedium, color = color)
-        }
-        IconButton(onClick = onOpenLog) {
-            Icon(SoniIcons.History, contentDescription = "Registro de acciones", tint = SoniColors.TextSecondary)
         }
     }
 }

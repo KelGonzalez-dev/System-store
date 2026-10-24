@@ -3,13 +3,16 @@ import { Upload, X } from 'lucide-react';
 import { addProductoImagen, createProducto, updateProducto } from '../api';
 import { toMediaUrl } from '../config';
 
-export default function ProductoModal({ producto, onClose, onSaved }) {
+export default function ProductoModal({ producto, categorias = [], onClose, onSaved }) {
   const esEdicion = !!producto;
   const [nombre, setNombre] = useState(producto?.nombre ?? '');
   const [codigo, setCodigo] = useState(producto?.codigo ?? '');
   const [descripcion, setDescripcion] = useState(producto?.descripcion ?? '');
   const [descripcionLarga, setDescripcionLarga] = useState(producto?.descripcionLarga ?? '');
   const [precio, setPrecio] = useState(producto?.precio ?? '');
+  const [categoriaId, setCategoriaId] = useState(producto?.categoriaId ? String(producto.categoriaId) : '');
+  const [talla, setTalla] = useState(producto?.talla ?? '');
+  const catSel = categorias.find((c) => String(c.id) === categoriaId);
   const [imagen, setImagen] = useState(null);
   const [preview, setPreview] = useState(producto?.imagenUrl ? toMediaUrl(producto.imagenUrl) : null);
   const [extraFotos, setExtraFotos] = useState([]);
@@ -49,6 +52,8 @@ export default function ProductoModal({ producto, onClose, onSaved }) {
       form.append('descripcion', descripcion);
       if (descripcionLarga) form.append('descripcionLarga', descripcionLarga);
       form.append('precio', precio);
+      form.append('categoriaId', categoriaId || '');
+      form.append('talla', catSel?.tallas?.includes(talla) ? talla : '');
       if (imagen) form.append(esEdicion ? 'nuevaImagen' : 'imagen', imagen);
 
       let productoId = producto?.id;
@@ -108,6 +113,20 @@ export default function ProductoModal({ producto, onClose, onSaved }) {
 
           <label htmlFor="p-nombre">Nombre *</label>
           <input id="p-nombre" className="input" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Mochila Wayuu Roja" />
+
+          <label htmlFor="p-cat">Categoría</label>
+          <select id="p-cat" className="input" value={categoriaId} onChange={(e) => { setCategoriaId(e.target.value); setTalla(''); }}>
+            <option value="">Sin categoría</option>
+            {categorias.map((c) => <option key={c.id} value={String(c.id)}>{c.nombre}{c.activo ? '' : ' (oculta)'}</option>)}
+          </select>
+          {catSel?.tallas?.length > 0 && (
+            <>
+              <label>Talla</label>
+              <div className="acat__tallas">
+                {catSel.tallas.map((t) => <button key={t} type="button" className={talla === t ? 'on' : ''} onClick={() => setTalla(talla === t ? '' : t)}>{t}</button>)}
+              </div>
+            </>
+          )}
 
           <label htmlFor="p-codigo">Código / NIT (opcional)</label>
           <input id="p-codigo" className="input" value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Ejem: GUAJ-0001" />

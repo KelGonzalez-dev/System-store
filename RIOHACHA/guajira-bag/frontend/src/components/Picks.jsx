@@ -5,6 +5,7 @@ import { getProductos, getResumenResenas } from '../api';
 import { adaptProduct } from '../lib/product';
 import Img from './Img';
 import ProductCard from './ProductCard';
+import { productPath } from '../lib/seo';
 
 /**
  * Inicio · "Elegidas para ti": un adelanto del catálogo con las mismas tarjetas del catálogo.
@@ -47,7 +48,7 @@ export default function Picks({ onAdd }) {
             : (
               <>
                 {items.map((p, k) => (
-                  <ProductCard key={p.id} item={p} idx={k} rating={data.ratings[p.id]} onAdd={onAdd} onSelect={(x) => nav(`/catalogo?p=${x.id}`)} />
+                  <ProductCard key={p.id} item={p} idx={k} rating={data.ratings[p.id]} onAdd={onAdd} onSelect={(x) => nav(productPath(x))} />
                 ))}
                 <Link to="/catalogo" className="qcard qcard--more" aria-label="Ver todo el catálogo">
                   <div className="qcard__img">

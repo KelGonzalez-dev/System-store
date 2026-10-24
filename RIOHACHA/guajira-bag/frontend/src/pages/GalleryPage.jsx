@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import Seo from '../components/Seo';
+import { breadcrumbLd, graph, SITE_URL } from '../lib/seo';
+import { toMediaUrl } from '../config';
 import Img from '../components/Img';
 import { getGaleria } from '../api';
 import { useReveal } from '../hooks/useReveal';
@@ -67,6 +69,16 @@ export default function GalleryPage() {
         title="Galería — Artesanía Wayuu"
         description="Galería fotográfica de nuestras mochilas Wayuu y del proceso artesanal de tejido en La Guajira, Colombia."
         keywords="galería mochilas wayuu, fotos artesanía wayuu, tejido wayuu"
+        image={images[0] ? toMediaUrl(images[0].url) : undefined}
+        jsonLd={graph(
+          {
+            '@type': 'ImageGallery',
+            name: 'Galería Guajira Bags',
+            url: `${SITE_URL}/galeria`,
+            image: images.slice(0, 30).map((im) => ({ '@type': 'ImageObject', contentUrl: toMediaUrl(im.url), caption: im.caption || 'Mochila Wayuu — Guajira Bags' })),
+          },
+          breadcrumbLd([['Inicio', '/'], ['Galería', '/galeria']]),
+        )}
       />
       <div className="wrap">
         <div className="gallery-page__head">

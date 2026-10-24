@@ -10,6 +10,8 @@ export function adaptProduct(p) {
     desc: p.descripcion || '',
     details: p.descripcionLarga || p.descripcion || '',
     price: Number(p.precio),
+    categoria: p.categoria || null,   // { id, nombre, slug }
+    talla: p.talla || null,
     photos: uniq,
     image: uniq[0] ? thumb(uniq[0], 320) : '/images/emblema-192.webp',
   };

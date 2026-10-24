@@ -2,7 +2,7 @@
 
     npm install
     npm start        # http://localhost:3000
-    npm run build    # genera la carpeta build/ para subir al hosting
+    npm run build    # genera build/ (incluye las páginas para Google y el sitemap)
 
 La URL de la API se toma de `.env` (`REACT_APP_API_URL=https://api.guajirabags.com`).
 
@@ -16,3 +16,6 @@ La URL de la API se toma de `.env` (`REACT_APP_API_URL=https://api.guajirabags.c
 - `src/components/Img.jsx` — imagen optimizada (miniaturas WebP de la API con respaldo al original).
 - `src/admin/` — panel (Productos, Galería y Reseñas).
 - `src/config.js` — URL de la API y ayudas de imágenes (`thumb`, `srcSet`).
+
+## SEO
+Ver `SEO_GOOGLE.md`. Código en `src/lib/seo.js`, `src/components/Seo.jsx` y `scripts/prerender.mjs`.

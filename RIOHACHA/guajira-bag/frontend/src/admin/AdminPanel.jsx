@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Image, LogOut, MessageSquareQuote, Package, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Image, LogOut, MessageSquareQuote, Package, Pencil, Plus, Tags, Trash2 } from 'lucide-react';
 import {
-  deleteGaleriaItem, deleteProducto, getGaleria, getProductos, updateGaleriaItem,
+  deleteGaleriaItem, deleteProducto, getCategorias, getGaleria, getProductos, updateGaleriaItem,
 } from '../api';
 import { thumb, toMediaUrl } from '../config';
 import ProductoModal from './ProductoModal';
 import GaleriaModal from './GaleriaModal';
 import ResenasAdmin from './ResenasAdmin';
+import CategoriasAdmin from './CategoriasAdmin';
 
 function Toast({ toast }) {
   if (!toast) return null;
@@ -36,6 +37,11 @@ export default function AdminPanel({ user, onLogout }) {
   const [prodPages, setProdPages] = useState(1);
   const [loadingProd, setLoadingProd] = useState(false);
 
+  const [categorias, setCategorias] = useState([]);
+  const [filtroCat, setFiltroCat] = useState('');
+  const cargarCategorias = () => getCategorias().then((d) => setCategorias(d?.categorias || [])).catch(() => {});
+  useEffect(() => { cargarCategorias(); }, []);
+
   const [galeria, setGaleria] = useState([]);
   const [loadingGal, setLoadingGal] = useState(false);
 
@@ -52,7 +58,7 @@ export default function AdminPanel({ user, onLogout }) {
   const cargarProductos = async (page = prodPage) => {
     setLoadingProd(true);
     try {
-      const data = await getProductos(page, 10, false);
+      const data = await getProductos(page, 12, false, filtroCat ? { categoria: filtroCat } : {});
       setProductos(data.items);
       setProdPages(data.totalPaginas);
     } catch {
@@ -73,7 +79,7 @@ export default function AdminPanel({ user, onLogout }) {
     }
   };
 
-  useEffect(() => { cargarProductos(1); }, []);
+  useEffect(() => { cargarProductos(1); }, [filtroCat]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (tab === 'galeria' && galeria.length === 0) cargarGaleria(); }, [tab]);
 
   const handleDeleteProducto = (id, nombre) => {
@@ -132,6 +138,7 @@ export default function AdminPanel({ user, onLogout }) {
         <div className="admin-tabs">
           <button type="button" className={tab === 'productos' ? 'active' : ''} onClick={() => setTab('productos')}><Package size={15} />Productos</button>
           <button type="button" className={tab === 'galeria' ? 'active' : ''} onClick={() => setTab('galeria')}><Image size={15} />Galería</button>
+          <button type="button" className={tab === 'categorias' ? 'active' : ''} onClick={() => setTab('categorias')}><Tags size={15} />Categorías</button>
           <button type="button" className={tab === 'resenas' ? 'active' : ''} onClick={() => setTab('resenas')}><MessageSquareQuote size={15} />Reseñas</button>
         </div>
 
@@ -140,6 +147,11 @@ export default function AdminPanel({ user, onLogout }) {
             <div className="admin-panel-head">
               <h2>Productos</h2>
               <button type="button" className="btn btn--gold btn--sm" onClick={() => setModalProducto('new')}><Plus size={15} />Nuevo producto</button>
+            </div>
+            <div className="ares__chips acat__filtro">
+              {[['', 'Todas'], ...categorias.map((c) => [String(c.id), `${c.nombre} (${c.total})`]), ['sin', 'Sin categoría']].map(([k, l]) => (
+                <button key={k || 'todas'} type="button" className={filtroCat === k ? 'on' : ''} onClick={() => { setFiltroCat(k); setProdPage(1); }}>{l}</button>
+              ))}
             </div>
             {loadingProd ? (
               <div className="admin-grid">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="acard"><div className="acard__img"><span className="skel" /></div></div>)}</div>
@@ -150,11 +162,13 @@ export default function AdminPanel({ user, onLogout }) {
                 {productos.map((p) => (
                   <div key={p.id} className="acard">
                     <div className="acard__img">
-                      {p.imagenUrl ? <img src={thumb(p.imagenUrl, 320)} alt={p.nombre} loading="lazy" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = toMediaUrl(p.imagenUrl); }} /> : <span className="skel" />}
+                      {p.imagenUrl ? <img src={thumb(p.imagenUrl, 320)} alt={p.nombre} loading="lazy" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = toMediaUrl(p.imagenUrl); }} /> : <span className="acard__nophoto">Sin foto</span>}
+                      {p.fotosFaltantes > 0 && <span className="acard__warn" title="La foto está registrada pero el archivo no está en el servidor">{p.fotosFaltantes === 1 ? 'Falta 1 foto' : `Faltan ${p.fotosFaltantes} fotos`} · vuelve a subirla</span>}
                       <span className="acard__status" style={{ background: p.activo ? 'rgba(40,167,69,0.14)' : 'rgba(220,53,69,0.14)', color: p.activo ? '#28a745' : '#dc3545' }}>{p.activo ? 'Activo' : 'Inactivo'}</span>
                     </div>
                     <div className="acard__body">
                       <h4>{p.nombre}</h4>
+                      <span className={`acard__cat${p.categoria ? '' : ' none'}`}>{p.categoria ? `${p.categoria.nombre}${p.talla ? ` · ${p.talla}` : ''}` : 'Sin categoría'}</span>
                       <p>{p.descripcion}</p>
                       <p className="acard__price">${Number(p.precio).toLocaleString('es-CO')}</p>
                       <div className="acard__actions">
@@ -174,6 +188,14 @@ export default function AdminPanel({ user, onLogout }) {
               </div>
             )}
           </>
+        )}
+
+        {tab === 'categorias' && (
+          <CategoriasAdmin
+            toast={showToast}
+            confirm={(msg, fn) => setConfirm({ msg, onConfirm: () => { setConfirm(null); fn(); } })}
+            onChange={() => { cargarCategorias(); cargarProductos(1); setProdPage(1); }}
+          />
         )}
 
         {tab === 'resenas' && (
@@ -197,7 +219,7 @@ export default function AdminPanel({ user, onLogout }) {
               <div className="admin-grid">
                 {galeria.map((item) => (
                   <div key={item.id} className={`acard${item.activo ? '' : ' acard--dim'}`}>
-                    <div className="acard__img"><img src={thumb(item.url, 320)} alt={item.caption ?? ''} loading="lazy" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = toMediaUrl(item.url); }} /></div>
+                    <div className="acard__img">{item.faltante ? <span className="acard__nophoto">Archivo no encontrado</span> : <img src={thumb(item.url, 320)} alt={item.caption ?? ''} loading="lazy" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = toMediaUrl(item.url); }} />}{item.faltante && <span className="acard__warn">Falta la foto · bórrala y súbela de nuevo</span>}</div>
                     <div className="acard__body">
                       <p className="acard__caption">{item.caption || 'Sin descripción'}</p>
                       <div className="acard__actions">
@@ -215,7 +237,7 @@ export default function AdminPanel({ user, onLogout }) {
       </div>
 
       {modalProducto && (
-        <ProductoModal producto={modalProducto === 'new' ? null : modalProducto} onClose={() => setModalProducto(null)} onSaved={() => cargarProductos(prodPage)} />
+        <ProductoModal producto={modalProducto === 'new' ? null : modalProducto} categorias={categorias} onClose={() => setModalProducto(null)} onSaved={() => { cargarProductos(prodPage); cargarCategorias(); }} />
       )}
       {modalGaleria && (
         <GaleriaModal item={modalGaleria === 'new' ? null : modalGaleria} onClose={() => setModalGaleria(null)} onSaved={cargarGaleria} />

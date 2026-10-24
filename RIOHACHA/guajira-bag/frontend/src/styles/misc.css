@@ -7,3 +7,5 @@
 .oops { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: calc(var(--nav-h) + 30px) 20px 60px; text-align: center; }
 .oops h2 { font-family: var(--f-display); font-weight: 500; font-size: 28px; color: var(--ink); }
 .oops p { color: #8a6a58; }
+/* Contenido para Google mientras carga la tienda (React lo reemplaza al instante) */
+.seo-static { max-width: 900px; margin: 0 auto; padding: 40px 20px; font-family: Georgia, serif; color: #4a3022; opacity: 0; }

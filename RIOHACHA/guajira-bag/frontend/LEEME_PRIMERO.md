@@ -1,17 +1,22 @@
-# Guajira Bags v3.6 — cómo instalar
+# Guajira Bags v5.1 — Categorías + SEO profesional
 
-## 1. API (Administrador de archivos del hosting)
-1. Haz una copia de seguridad de tu carpeta `php-api` actual.
-2. Sube el contenido de `php-api/` de este paquete **reemplazando** los archivos
-   (`.htaccess`, `public/index.php`, `public/.htaccess`, `public/img/`, `src/`, `scripts/`, `storage/`, `database/`).
-   - ⚠️ **NO reemplaces ni borres `config/config.php` del servidor**: tiene tus claves.
-   - Conserva tu carpeta `public/uploads/` (tus fotos).
-3. **Borra del servidor** estos archivos si siguen ahí: `public/verificar.php`, `public/diagnostico.php`,
-   `public/recuperar-fotos.php` y `public/ping.php`.
-4. Prueba: abre `https://api.guajirabags.com/api/productos` → debe mostrar tus mochilas en texto.
+## 1. Base de datos (si aún no lo hiciste)
+phpMyAdmin → tu base → pestaña SQL → pega `guajira-bags-categorias.sql` → Continuar.
 
-Las reseñas que ya tienes se conservan. La base de datos se ajusta sola (no borra nada).
+## 2. API — sube SOLO los archivos de `api-archivos-para-subir/php-api/` (reemplazando)
+| Archivo | Va en el servidor en |
+|---|---|
+| `index.php`, `.user.ini` | `php-api/public/` |
+| `Schema.php` | `php-api/src/` |
+| `ProductoService.php`, `CategoriaService.php`, `ImageService.php`, `FileStorageService.php`, `GaleriaService.php` | `php-api/src/Services/` |
+| `ProductosController.php`, `CategoriasController.php`, `SitemapController.php` (nuevo) | `php-api/src/Controllers/` |
 
-## 2. Tienda
-1. En `guajira-bags-frontend`: `npm install` y luego `npm run build`.
-2. Sube el contenido de `build/` como siempre.
+⚠️ No toques `config/config.php` ni `public/uploads/`. Nunca subas la carpeta `php-api` completa encima.
+Prueba: abre `https://api.guajirabags.com/sitemap.xml` → debe mostrar la lista de direcciones.
+
+## 3. Tienda
+En `guajira-bags-frontend`: `npm install` y `npm run build`.
+Sube **todo** el contenido de `build/` (incluida la carpeta `__p` y el archivo `.htaccess`).
+
+## 4. Google
+Sigue `guajira-bags-frontend/SEO_GOOGLE.md` (enviar los dos sitemaps en Search Console).

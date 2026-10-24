@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import Seo, { SITE_URL } from '../components/Seo';
+import Seo from '../components/Seo';
+import { graph, organizationLd, websiteLd } from '../lib/seo';
 import { useReveal } from '../hooks/useReveal';
 import GalleryPreview from '../components/GalleryPreview';
 import Testimonials from '../components/Testimonials';
@@ -126,18 +127,10 @@ export default function Home({ onAdd }) {
     <>
       <Seo
         path="/"
-        title="Mochilas Wayuu para mujer: moda, elegancia y calidad tejida a mano"
-        description="Guajira Bags: mochilas Wayuu y Kankuamas 100% artesanales, tejidas a mano en La Guajira, Colombia. Cultura Wayuu, tradición y diseño único. Pedidos por WhatsApp."
+        title="Mochilas Wayuu tejidas a mano: recamadas, doble uso, tradicionales y más"
+        description="Guajira Bags: mochilas Wayuu y Kankuamas 100% artesanales, tejidas a mano en La Guajira. Mochilas recamadas, doble uso, primavera, tradicionales, mochilones y sobres. Piezas únicas, envíos a toda Colombia y pedidos por WhatsApp."
         keywords="guajira bags, mochilas para mujer, bolsos de mujer, moda femenina colombia, mochilas elegantes, mejor precio mochilas, mochilas de calidad, ropa y accesorios de mujer, mochilas wayuu, mochilas wayuu originales, cultura wayuu, mochilas kankuamas, mochilas artesanales colombia, wayuu bags, la guajira"
-        jsonLd={{
-          '@context': 'https://schema.org',
-          '@type': 'Store',
-          name: 'Guajira Bags',
-          image: `${SITE_URL}/images/logo-512.png`,
-          description: 'Mochilas Wayuu y Kankuamas tejidas a mano en La Guajira, Colombia.',
-          address: { '@type': 'PostalAddress', addressLocality: 'Riohacha', addressRegion: 'La Guajira', addressCountry: 'CO' },
-          sameAs: ['https://www.instagram.com/guajira_bags/', 'https://www.tiktok.com/@.guajira.bags'],
-        }}
+        jsonLd={graph(organizationLd(), websiteLd())}
       />
       <Hero />
       <Strip />
