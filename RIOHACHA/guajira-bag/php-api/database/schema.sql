@@ -13,6 +13,7 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS resenas;
+DROP TABLE IF EXISTS categorias;
 DROP TABLE IF EXISTS producto_imagenes;
 DROP TABLE IF EXISTS productos;
 DROP TABLE IF EXISTS galeria;
@@ -33,6 +34,8 @@ CREATE TABLE usuarios (
 CREATE TABLE productos (
     id                 INT AUTO_INCREMENT PRIMARY KEY,
     codigo             VARCHAR(60),
+    categoria_id       INT,
+    talla              VARCHAR(30),
     nombre             VARCHAR(200) NOT NULL,
     descripcion        TEXT         NOT NULL,
     descripcion_larga  TEXT,
@@ -89,3 +92,16 @@ VALUES (
 );
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- Categorías del catálogo (las tallas van separadas por coma)
+CREATE TABLE categorias (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    nombre      VARCHAR(80)  NOT NULL,
+    slug        VARCHAR(90)  NOT NULL UNIQUE,
+    descripcion VARCHAR(255),
+    tallas      VARCHAR(255),
+    orden       INT          NOT NULL DEFAULT 0,
+    activo      TINYINT(1)   NOT NULL DEFAULT 1,
+    creado_en   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE INDEX idx_productos_categoria ON productos(activo, categoria_id, talla);

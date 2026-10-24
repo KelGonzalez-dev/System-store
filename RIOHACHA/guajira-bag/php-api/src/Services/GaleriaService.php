@@ -12,7 +12,9 @@ class GaleriaService
     public function listar(bool $soloActivos = true): array
     {
         $sql = 'SELECT * FROM galeria' . ($soloActivos ? ' WHERE activo = 1' : '') . ' ORDER BY orden ASC, creado_en DESC';
-        return array_map(fn($r) => $this->toResponse($r), $this->db->query($sql)->fetchAll());
+        $items = array_map(fn($r) => $this->toResponse($r), $this->db->query($sql)->fetchAll());
+        // En la página pública no se muestran fotos cuyo archivo no está en el servidor
+        return $soloActivos ? array_values(array_filter($items, fn($i) => !$i['faltante'])) : $items;
     }
 
     public function obtener(int $id): ?array
@@ -82,6 +84,7 @@ class GaleriaService
             'orden'    => (int) $row['orden'],
             'activo'   => Response::boolFromDb($row['activo']),
             'creadoEn' => $row['creado_en'] ? str_replace(' ', 'T', $row['creado_en']) : null,
+            'faltante' => !$this->storage->exists($row['url']),
         ];
     }
 }

@@ -22,6 +22,12 @@ object WakeWordController {
     private val _state = MutableStateFlow<WakeWordState>(WakeWordState.Off)
     val state: StateFlow<WakeWordState> = _state.asStateFlow()
 
+    /** SONI está hablando ahora mismo (para que la burbuja y el orbe ondulen con la voz). */
+    private val _speaking = MutableStateFlow(false)
+    val speaking: StateFlow<Boolean> = _speaking.asStateFlow()
+
+    fun setSpeaking(value: Boolean) { _speaking.value = value }
+
     private val _uiHoldsMic = MutableStateFlow(false)
 
     /** La pantalla está usando el micrófono o hablando: el servicio debe soltarlo y no escuchar. */

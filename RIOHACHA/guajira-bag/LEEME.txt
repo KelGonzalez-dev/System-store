@@ -1,0 +1,33 @@
+GUAJIRA BAGS — API COMPLETA
+
+Estructura en el servidor (public_html/api/):
+
+  api/
+  ├── .htaccess                 ← envía todo a public/
+  ├── config/
+  │   ├── .htaccess             ← bloquea el acceso desde internet
+  │   └── config.php            ← TU ARCHIVO CON CLAVES (NO viene en este paquete: no lo borres)
+  ├── database/schema.sql       ← solo para una instalación desde cero
+  ├── public/
+  │   ├── .htaccess
+  │   ├── .user.ini
+  │   ├── index.php
+  │   ├── img/.htaccess
+  │   └── uploads/              ← TUS FOTOS (NO vienen en este paquete: no la borres)
+  ├── scripts/
+  ├── src/   (Controllers, Helpers, Services, bootstrap.php, Database.php, Schema.php)
+  └── storage/.htaccess
+
+CÓMO SUBIRLA
+1. Sube el contenido de la carpeta php-api/ dentro de public_html/api/, reemplazando archivos.
+   NO borres antes la carpeta api: así conservas config/config.php y public/uploads/.
+2. Activa "Mostrar archivos ocultos" y revisa que estén los archivos que empiezan con punto
+   (.htaccess y .user.ini). Si alguno no se subió, usa la carpeta "copias-visibles-de-archivos-ocultos":
+   sube el .txt a la carpeta indicada y renómbralo (por ejemplo htaccess.txt → .htaccess,
+   user.ini.txt → .user.ini).
+3. Prueba: https://api.guajirabags.com/api/categorias  → debe mostrar tus categorías.
+          https://api.guajirabags.com/sitemap.xml      → debe mostrar la lista de páginas.
+
+SI ALGÚN DÍA FALTA config/config.php
+Copia config/config.example.php como config/config.php y escribe ahí los datos de tu base de datos
+(los ves en el panel del hosting, sección MySQL) y una frase secreta larga en jwt.key.

@@ -57,6 +57,22 @@ class FileStorageService
         return [true, '', "/uploads/$subfolder/$fileName"];
     }
 
+    /** ¿Existe de verdad el archivo de esta foto en el servidor? */
+    public function exists(?string $relativeUrl): bool
+    {
+        if (!$relativeUrl) {
+            return false;
+        }
+        if (preg_match('#^https?://#', $relativeUrl)) {
+            return true; // foto externa: no se puede comprobar aquí
+        }
+        $relative = ltrim($relativeUrl, '/');
+        if (!str_starts_with($relative, 'uploads/') || str_contains($relative, '..')) {
+            return false;
+        }
+        return is_file(dirname($this->uploadFolder) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative));
+    }
+
     public function delete(?string $relativeUrl): void
     {
         if (!$relativeUrl) {

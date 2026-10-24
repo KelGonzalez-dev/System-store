@@ -7,7 +7,10 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
 import android.media.AudioManager
+import com.soni.assistant.notifications.SoniNotificationListener
 import android.media.ToneGenerator
 import android.os.Build
 import android.os.IBinder
@@ -52,21 +55,45 @@ class WakeWordService : Service() {
 
     private var initialized = false
     private var commandJob: Job? = null
+    private var focusRequest: AudioFocusRequest? = null
+    /** true si SONI pausó un reproductor y debe reanudarlo al terminar. */
+    private var pausedPlayer = false
+    private var battery: BatteryAnnouncer? = null
+    private var conversationMisses = 0
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         WakeWordNotifications.createChannels(this)
-        engine = SoniEngine.createDefault(PermissionManager(this), ActionLogRepository.create(this))
+        engine = SoniEngine.createDefault(PermissionManager(this), ActionLogRepository.create(this), context = this)
         wakeWord = WakeWordManager(this)
         speechInput = SpeechInput(this)
         speechOutput = SpeechOutput(this)
         preferences = SoniPreferences(this)
         tone = runCatching { ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80) }.getOrNull()
 
+        // Avisos de batería: solo se hablan si SONI está libre esperando su nombre.
+        battery = BatteryAnnouncer(this) { message ->
+            val state = WakeWordController.state.value
+            if (state == WakeWordState.Waiting || state == WakeWordState.Paused) {
+                speechOutput.speak(message)
+                true
+            } else {
+                false
+            }
+        }.also { it.start() }
+
         scope.launch {
             WakeWordController.uiHoldsMic.collect { holds -> onUiMicChanged(holds) }
+        }
+        scope.launch {
+            speechOutput.isSpeaking.collect { WakeWordController.setSpeaking(it) }
+        }
+        scope.launch {
+            SpeechController.commands.collect { command ->
+                if (command == SpeechController.Command.STOP_SPEAKING) speechOutput.stop()
+            }
         }
     }
 
@@ -85,6 +112,14 @@ class WakeWordService : Service() {
                     onWakeWordDetected()
                 }
                 return START_STICKY
+            }
+            ACTION_LISTEN_NOW -> {
+                // «Hablar» desde la burbuja: escuchar la orden sin esperar la palabra «SONI».
+                if (initialized && WakeWordController.state.value == WakeWordState.Waiting) {
+                    wakeWord.stop()
+                    onWakeWordDetected()
+                    return START_STICKY
+                }
             }
         }
 
@@ -150,6 +185,7 @@ class WakeWordService : Service() {
 
     private fun onWakeWordDetected() {
         speechOutput.stop()
+        pauseOtherAudio()
         setState(WakeWordState.ListeningCommand)
         commandJob?.cancel()
         commandJob = scope.launch {
@@ -163,6 +199,7 @@ class WakeWordService : Service() {
     private fun onSpeechEvent(event: SpeechEvent) {
         when (event) {
             is SpeechEvent.Final -> {
+                conversationMisses = 0
                 setState(WakeWordState.Processing)
                 commandJob = scope.launch {
                     when (val result = engine.process(event.text)) {
@@ -181,6 +218,18 @@ class WakeWordService : Service() {
                 }
             }
             is SpeechEvent.Error -> {
+                // En medio de una conversación: se reintenta una vez; si sigue sin oír nada, se abandona.
+                if (engine.isInConversation) {
+                    conversationMisses++
+                    if (conversationMisses >= 2) {
+                        engine.cancelConversation()
+                        conversationMisses = 0
+                        commandJob = scope.launch { respond("Lo dejamos para después.", "Lo dejamos para después.") }
+                        return
+                    }
+                    commandJob = scope.launch { respond("No te escuché. ¿Me lo repites?", "No te escuché. ¿Me lo repites?") }
+                    return
+                }
                 val message = when (event.code) {
                     SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
                         "No te entendí. Di «SONI» otra vez y espera el tono."
@@ -201,7 +250,65 @@ class WakeWordService : Service() {
             withTimeoutOrNull(SPEECH_START_TIMEOUT_MS) { speechOutput.isSpeaking.first { it } }
             withTimeoutOrNull(SPEECH_MAX_MS) { speechOutput.isSpeaking.first { !it } }
         }
+        // Si SONI hizo una pregunta (p. ej. «¿cómo te llamas?»), escucha la respuesta sin esperar «SONI».
+        if (engine.isInConversation) {
+            listenForCommand()
+            return
+        }
+        conversationMisses = 0
+        resumeOtherAudio()
         listenForWakeWord()
+    }
+
+    private fun listenForCommand() {
+        setState(WakeWordState.ListeningCommand)
+        commandJob = scope.launch {
+            tone?.startTone(ToneGenerator.TONE_PROP_BEEP, TONE_MS)
+            delay(TONE_MS + 100L)
+            speechInput.start(SoniLocale.languageTag, ::onSpeechEvent)
+        }
+    }
+
+    /**
+     * Pide el audio en exclusiva mientras SONI escucha la orden y responde: Spotify y los demás
+     * reproductores se pausan solos y vuelven a sonar al soltarlo.
+     */
+    private fun pauseOtherAudio() {
+        // 1. Pedir el foco: muchas apps bajan o pausan solas al perderlo.
+        if (focusRequest == null) {
+            val am = getSystemService(AudioManager::class.java)
+            if (am != null) {
+                val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                    .setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ASSISTANT)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build()
+                    )
+                    .setOnAudioFocusChangeListener { }
+                    .build()
+                if (am.requestAudioFocus(request) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) focusRequest = request
+            }
+        }
+        // 2. Además, pausar de verdad el reproductor que esté sonando (Spotify, YouTube Music…),
+        //    porque algunas apps ignoran el foco. Solo si está reproduciendo ahora mismo.
+        val player = SoniNotificationListener.activePlayer(this)
+        if (player != null && player.playbackState?.state == android.media.session.PlaybackState.STATE_PLAYING) {
+            runCatching { player.transportControls.pause() }
+            pausedPlayer = true
+        }
+    }
+
+    private fun resumeOtherAudio() {
+        focusRequest?.let {
+            getSystemService(AudioManager::class.java)?.abandonAudioFocusRequest(it)
+            focusRequest = null
+        }
+        // Reanudar el reproductor que pausamos nosotros.
+        if (pausedPlayer) {
+            pausedPlayer = false
+            runCatching { SoniNotificationListener.activePlayer(this)?.transportControls?.play() }
+        }
     }
 
     private fun onUiMicChanged(holds: Boolean) {
@@ -230,6 +337,8 @@ class WakeWordService : Service() {
     }
 
     override fun onDestroy() {
+        battery?.stop()
+        resumeOtherAudio()
         scope.cancel()
         wakeWord.release()
         speechInput.destroy()
@@ -254,6 +363,14 @@ class WakeWordService : Service() {
     companion object {
         const val ACTION_STOP = "com.soni.assistant.action.STOP_LISTENING"
         const val ACTION_SIMULATE_WAKE = "com.soni.assistant.action.SIMULATE_WAKE"
+        const val ACTION_LISTEN_NOW = "com.soni.assistant.action.LISTEN_NOW"
+
+        /** Arranca (si hace falta) y escucha una orden de inmediato. */
+        fun listenNow(context: Context) {
+            ContextCompat.startForegroundService(
+                context, Intent(context, WakeWordService::class.java).setAction(ACTION_LISTEN_NOW),
+            )
+        }
 
         private const val TONE_MS = 150
         private const val SPEECH_START_TIMEOUT_MS = 3_000L

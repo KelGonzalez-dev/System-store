@@ -84,3 +84,20 @@ export const deleteResena = (id) =>
 // Reseña desde el inicio (de la tienda, sin elegir mochila)
 export const crearResenaGeneral = (data) =>
   api.post('/resenas', data).then(r => r.data);
+
+// ── Categorías ───────────────────────────────────────────────
+// Respuesta: { categorias: [{ id, nombre, slug, tallas, porTalla, total, precioMin, precioMax }], sinCategoria, precioMin, precioMax }
+export const getCategorias = () =>
+  api.get('/categorias').then(r => r.data);
+
+export const createCategoria = (data) =>
+  api.post('/categorias', data).then(r => r.data);
+
+export const updateCategoria = (id, data) =>
+  api.put(`/categorias/${id}`, data).then(r => r.data);
+
+export const reordenarCategorias = (ids) =>
+  api.put('/categorias/orden', { ids });
+
+export const deleteCategoria = (id) =>
+  api.delete(`/categorias/${id}`);

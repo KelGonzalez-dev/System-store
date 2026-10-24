@@ -30,4 +30,15 @@ class SoniEngineTest {
         assertTrue(result is ActionResult.Failed)
         assertTrue(result.message.contains("dividir entre cero"))
     }
+
+    @Test
+    fun consultaDeAccionesYPermisosMuestraInformacionDetallada() = runBlocking {
+        val result = engine.process("SONI, acciones")
+        assertTrue(result is ActionResult.Success)
+        val success = result as ActionResult.Success
+        assertTrue(success.message.contains("Micrófono"))
+        assertTrue(success.message.contains("Fecha y hora"))
+        assertTrue(success.message.contains("Calculadora"))
+        assertEquals("Acciones y permisos", success.actionLabel)
+    }
 }

@@ -9,6 +9,7 @@ use PDO;
 class ProductoService
 {
     private ?bool $conCodigo = null;
+    private ?bool $conCategoria = null;
 
     public function __construct(private PDO $db, private FileStorageService $storage) {}
 
@@ -21,14 +22,28 @@ class ProductoService
         $where = [];
         $args = [];
         if ($soloActivos) {
-            $where[] = 'activo = 1';
+            $where[] = 'p.activo = 1';
+        }
+        if ($this->conCategoria()) {
+            $cat = trim((string) ($f['categoria'] ?? ''));
+            if ($cat === 'sin') {
+                $where[] = '(p.categoria_id IS NULL OR c.id IS NULL)';
+            } elseif ($cat !== '') {
+                $where[] = ctype_digit($cat) ? 'p.categoria_id = ?' : 'c.slug = ?';
+                $args[] = ctype_digit($cat) ? (int) $cat : $cat;
+            }
+            $talla = trim((string) ($f['talla'] ?? ''));
+            if ($talla !== '') {
+                $where[] = 'p.talla = ?';
+                $args[] = $talla;
+            }
         }
         $q = trim((string) ($f['q'] ?? ''));
         if ($q !== '') {
             $like = '%' . mb_substr($q, 0, 80) . '%';
-            $cols = ['nombre', 'descripcion'];
+            $cols = ['p.nombre', 'p.descripcion'];
             if ($this->conCodigo()) {
-                $cols[] = 'codigo';
+                $cols[] = 'p.codigo';
             }
             $where[] = '(' . implode(' OR ', array_map(fn($c) => "$c LIKE ?", $cols)) . ')';
             foreach ($cols as $_) {
@@ -36,26 +51,27 @@ class ProductoService
             }
         }
         if (isset($f['min']) && $f['min'] !== null) {
-            $where[] = 'precio >= ?';
+            $where[] = 'p.precio >= ?';
             $args[] = (float) $f['min'];
         }
         if (isset($f['max']) && $f['max'] !== null) {
-            $where[] = 'precio <= ?';
+            $where[] = 'p.precio <= ?';
             $args[] = (float) $f['max'];
         }
         $w = $where ? 'WHERE ' . implode(' AND ', $where) : '';
         $order = match ($f['orden'] ?? '') {
-            'precio_asc'  => 'precio ASC, id DESC',
-            'precio_desc' => 'precio DESC, id DESC',
-            'nombre'      => 'nombre ASC',
-            default       => 'creado_en DESC, id DESC',
+            'precio_asc'  => 'p.precio ASC, p.id DESC',
+            'precio_desc' => 'p.precio DESC, p.id DESC',
+            'nombre'      => 'p.nombre ASC',
+            default       => 'p.creado_en DESC, p.id DESC',
         };
 
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM productos $w");
+        $from = $this->from();
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM $from $w");
         $stmt->execute($args);
         $total = (int) $stmt->fetchColumn();
 
-        $stmt = $this->db->prepare("SELECT * FROM productos $w ORDER BY $order LIMIT ? OFFSET ?");
+        $stmt = $this->db->prepare("SELECT {$this->campos()} FROM $from $w ORDER BY $order LIMIT ? OFFSET ?");
         $i = 1;
         foreach ($args as $a) {
             $stmt->bindValue($i++, $a);
@@ -77,7 +93,7 @@ class ProductoService
 
     public function obtener(int $id): ?array
     {
-        $stmt = $this->db->prepare('SELECT * FROM productos WHERE id = ?');
+        $stmt = $this->db->prepare("SELECT {$this->campos()} FROM {$this->from()} WHERE p.id = ?");
         $stmt->execute([$id]);
         $row = $stmt->fetch();
         return $row ? $this->toResponse($row, $this->fotosDe([$id])[$id] ?? []) : null;
@@ -93,7 +109,11 @@ class ProductoService
             }
             $imagenUrl = $url;
         }
-        if ($this->conCodigo()) {
+        if ($this->conCategoria()) {
+            [$cid, $talla] = $this->asignacion($req['categoriaId'] ?? null, $req['talla'] ?? null);
+            $stmt = $this->db->prepare('INSERT INTO productos (codigo, categoria_id, talla, nombre, descripcion, descripcion_larga, precio, imagen_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+            $stmt->execute([$req['codigo'] ?? null, $cid, $talla, $req['nombre'], $req['descripcion'], $req['descripcionLarga'] ?? null, $req['precio'], $imagenUrl]);
+        } elseif ($this->conCodigo()) {
             $stmt = $this->db->prepare('INSERT INTO productos (codigo, nombre, descripcion, descripcion_larga, precio, imagen_url) VALUES (?, ?, ?, ?, ?, ?)');
             $stmt->execute([$req['codigo'] ?? null, $req['nombre'], $req['descripcion'], $req['descripcionLarga'] ?? null, $req['precio'], $imagenUrl]);
         } else {
@@ -162,6 +182,13 @@ class ProductoService
             $fields[] = 'codigo = ?';
             $params[] = $req['codigo'];
         }
+        if (array_key_exists('categoriaId', $req) && $this->conCategoria()) {
+            [$cid, $talla] = $this->asignacion($req['categoriaId'], $req['talla'] ?? null);
+            $fields[] = 'categoria_id = ?';
+            $params[] = $cid;
+            $fields[] = 'talla = ?';
+            $params[] = $talla;
+        }
         if (isset($req['activo'])) {
             $fields[] = 'activo = ?';
             $params[] = $req['activo'] ? 1 : 0;
@@ -217,6 +244,27 @@ class ProductoService
         return $out;
     }
 
+    private function conCategoria(): bool
+    {
+        return $this->conCategoria ??= Schema::hasColumn($this->db, 'productos', 'categoria_id');
+    }
+
+    private function from(): string
+    {
+        return $this->conCategoria() ? 'productos p LEFT JOIN categorias c ON c.id = p.categoria_id' : 'productos p';
+    }
+
+    private function campos(): string
+    {
+        return $this->conCategoria() ? 'p.*, c.nombre AS categoria_nombre, c.slug AS categoria_slug' : 'p.*';
+    }
+
+    /** Categoría y talla válidas (la talla debe pertenecer a la categoría). @return array{0: ?int, 1: ?string} */
+    private function asignacion(mixed $categoriaId, mixed $talla): array
+    {
+        return (new CategoriaService($this->db))->validarAsignacion($categoriaId, $talla);
+    }
+
     private function conCodigo(): bool
     {
         return $this->conCodigo ??= Schema::hasColumn($this->db, 'productos', 'codigo');
@@ -224,18 +272,30 @@ class ProductoService
 
     private function toResponse(array $row, array $fotos): array
     {
+        // Solo se publican las fotos cuyo archivo existe en el servidor: así nunca sale una foto rota.
+        $principalOk = $this->storage->exists($row['imagen_url']);
+        $fotosOk = array_values(array_filter($fotos, fn($f) => $this->storage->exists($f['url'])));
+        $faltantes = ($row['imagen_url'] && !$principalOk ? 1 : 0) + (count($fotos) - count($fotosOk));
+        $principal = $principalOk ? $row['imagen_url'] : ($fotosOk[0]['url'] ?? null);
+        if (!$principalOk && $fotosOk) {
+            array_shift($fotosOk); // la primera foto extra pasa a ser la principal
+        }
         return [
             'id'               => (int) $row['id'],
             'codigo'           => $row['codigo'] ?? null,
+            'categoria'        => !empty($row['categoria_nombre']) ? ['id' => (int) $row['categoria_id'], 'nombre' => $row['categoria_nombre'], 'slug' => $row['categoria_slug']] : null,
+            'categoriaId'      => !empty($row['categoria_nombre']) ? (int) $row['categoria_id'] : null,
+            'talla'            => !empty($row['categoria_nombre']) ? ($row['talla'] ?? null) : null,
             'nombre'           => $row['nombre'],
             'descripcion'      => $row['descripcion'],
             'descripcionLarga' => $row['descripcion_larga'],
             'precio'           => (float) $row['precio'],
-            'imagenUrl'        => $row['imagen_url'],
+            'imagenUrl'        => $principal,
             'activo'           => Response::boolFromDb($row['activo']),
             'creadoEn'         => $row['creado_en'] ? str_replace(' ', 'T', $row['creado_en']) : null,
-            'imagenes'         => array_column($fotos, 'url'), // compatibilidad: solo URLs
-            'fotos'            => $fotos,                      // con id, para poder borrarlas desde el panel
+            'imagenes'         => array_column($fotosOk, 'url'), // compatibilidad: solo URLs
+            'fotos'            => $fotosOk,                      // con id, para poder borrarlas desde el panel
+            'fotosFaltantes'   => $faltantes,                    // fotos registradas cuyo archivo no está en el servidor
         ];
     }
 }

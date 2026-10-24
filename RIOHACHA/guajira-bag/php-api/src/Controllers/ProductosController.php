@@ -20,7 +20,9 @@ class ProductosController
         $num = fn($k) => isset($_GET[$k]) && $_GET[$k] !== '' && is_numeric($_GET[$k]) ? (float) $_GET[$k] : null;
 
         $data = $this->service->listar($pagina, $porPagina, $soloActivos, [
-            'q'     => (string) ($_GET['q'] ?? ''),
+            'q'         => (string) ($_GET['q'] ?? ''),
+            'categoria' => (string) ($_GET['categoria'] ?? ''),
+            'talla'     => (string) ($_GET['talla'] ?? ''),
             'orden' => (string) ($_GET['orden'] ?? ''),
             'min'   => $num('min'),
             'max'   => $num('max'),
@@ -55,6 +57,8 @@ class ProductosController
         try {
             $producto = $this->service->crear([
                 'codigo'           => $this->texto('codigo', 60),
+                'categoriaId'      => $_POST['categoriaId'] ?? null,
+                'talla'            => $_POST['talla'] ?? null,
                 'nombre'           => mb_substr($nombre, 0, 200),
                 'descripcion'      => $descripcion,
                 'descripcionLarga' => ($_POST['descripcionLarga'] ?? '') ?: null,
@@ -103,6 +107,10 @@ class ProductosController
         }
         if (array_key_exists('codigo', $_POST)) {
             $req['codigo'] = $this->texto('codigo', 60);
+        }
+        if (array_key_exists('categoriaId', $_POST)) {
+            $req['categoriaId'] = $_POST['categoriaId'];
+            $req['talla'] = $_POST['talla'] ?? null;
         }
         if (isset($_POST['precio']) && is_numeric($_POST['precio'])) {
             $req['precio'] = (float) $_POST['precio'];

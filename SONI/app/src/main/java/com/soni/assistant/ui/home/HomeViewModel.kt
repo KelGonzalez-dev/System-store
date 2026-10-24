@@ -2,6 +2,9 @@ package com.soni.assistant.ui.home
 
 import android.Manifest
 import android.app.Application
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
@@ -29,12 +32,14 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val actionLog = ActionLogRepository.create(application)
-    private val engine = SoniEngine.createDefault(PermissionManager(application), actionLog)
+    private val engine = SoniEngine.createDefault(PermissionManager(application), actionLog, application)
     private val speechInput = SpeechInput(application)
     private val speechOutput = SpeechOutput(application)
     private val preferences = SoniPreferences(application)
@@ -42,6 +47,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private var nextMessageId = 0L
     private var idleJob: Job? = null
     private var voiceWarningShown = false
+    /** La última orden llegó por voz (para seguir escuchando si SONI hace una pregunta). */
+    private var lastInputWasVoice = false
 
     private val _uiState = MutableStateFlow(
         HomeUiState(
@@ -81,6 +88,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+    }
+
+    /** Describe una imagen que el usuario compartió con SONI desde otra app. */
+    fun describeSharedImage(uri: android.net.Uri) {
+        addMessage(MessageKind.USER, "Describe esta imagen")
+        runCommand(null) { engine.process2(com.soni.assistant.core.Action.DescribeImage(uri.toString())) }
     }
 
     fun submitText(rawText: String) {
@@ -157,6 +170,17 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         speechOutput.speak(result.spokenMessage)
+        if (engine.isInConversation && lastInputWasVoice) listenAfterSpeaking()
+        lastInputWasVoice = false
+    }
+
+    /** SONI hizo una pregunta: cuando termine de hablar, abre el micrófono para la respuesta. */
+    private fun listenAfterSpeaking() {
+        viewModelScope.launch {
+            withTimeoutOrNull(3_000) { speechOutput.isSpeaking.first { it } }
+            withTimeoutOrNull(60_000) { speechOutput.isSpeaking.first { !it } }
+            if (engine.isInConversation && _uiState.value.status != AssistantStatus.LISTENING) startListening()
+        }
     }
 
     /** Requiere que el permiso de micrófono ya esté concedido (lo comprueba la pantalla). */
@@ -203,6 +227,29 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun enableBackgroundListening() {
         viewModelScope.launch { preferences.setBackgroundListening(true) }
         WakeWordService.start(getApplication())
+        requestOverlayPermissionIfNeeded()
+    }
+
+    /**
+     * Android 10+ no deja que una app en segundo plano abra otras apps, salvo que tenga
+     * «Mostrar sobre otras apps». Sin él, «SONI, abre la cámara» con la pantalla en otra app
+     * no hace nada (Android lo bloquea en silencio).
+     */
+    private fun requestOverlayPermissionIfNeeded() {
+        val app = getApplication<Application>()
+        if (Settings.canDrawOverlays(app)) return
+        addMessage(
+            MessageKind.INFO,
+            "Para abrir apps cuando me llamas con la pantalla en otra app, activa «Mostrar sobre otras apps» para SONI. " +
+                "En Honor revisa también Ajustes → Batería → Inicio de aplicaciones → SONI → gestión manual.",
+            "Permiso recomendado",
+        )
+        runCatching {
+            app.startActivity(
+                Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${app.packageName}"))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
     }
 
     fun disableBackgroundListening() {
@@ -223,6 +270,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             is SpeechEvent.Final -> {
                 _uiState.update { it.copy(status = AssistantStatus.PROCESSING, partialTranscript = "", micLevel = 0f) }
                 submitText(event.text)
+                lastInputWasVoice = true
             }
             is SpeechEvent.Error -> {
                 _uiState.update {
@@ -272,7 +320,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private companion object {
         const val WELCOME =
-            "Hola, soy SONI. Pulsa el micrófono o escribe una orden. Por ahora puedo decirte la hora, la fecha y hacer cálculos."
+            "Hola, soy SONI. Pulsa el micrófono o escribe una orden: abrir apps, poner música, llamar, buscar información y más."
         const val IDLE_DELAY_MS = 4_000L
         const val MAX_MESSAGES = 100
     }

@@ -40,7 +40,7 @@ class IntentParser(toolRules: List<IntentRule>) {
         return withoutWakeWord.trim().trimEnd('.', ',', ';', ':').trim()
     }
 
-    private companion object {
+    companion object {
         val COMBINING_MARKS = Regex("\\p{Mn}+")
         val IGNORED_PUNCTUATION = Regex("[¿?¡!\"“”«»]")
         val WHITESPACE = Regex("\\s+")
@@ -51,8 +51,12 @@ class IntentParser(toolRules: List<IntentRule>) {
 
         val HELP_PATTERNS = listOf(
             Regex("\\bayuda\\b"),
-            Regex("\\bque (?:puedes|sabes) hacer\\b"),
+            Regex("\\bacciones\\b"),
+            Regex("\\bque (?:puedes|sabes|haces) hacer\\b"),
+            Regex("\\bque haces\\b"),
             Regex("\\bcomandos\\b"),
+            Regex("\\bpermisos\\b"),
+            Regex("\\bque (?:puedes|sabes|haces|tienes)\\b"),
         )
         val GREETING = Regex("^(?:hola|buenos dias|buenas tardes|buenas noches|buenas|hey|que tal)\\b")
 

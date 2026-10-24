@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">SONI</string>
+    <string name="accessibility_label">SONI: control de apps</string>
+    <string name="accessibility_description">Permite que SONI pulse «Enviar» en WhatsApp y toque el primer resultado en Spotify cuando tú se lo pides. Solo actúa sobre esas apps y solo justo después de una orden tuya.</string>
 </resources>

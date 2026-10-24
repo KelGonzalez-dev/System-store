@@ -29,6 +29,11 @@ class BootReceiver : BroadcastReceiver() {
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                // Android borra las alarmas al apagarse: se vuelven a programar los recordatorios.
+                com.soni.assistant.reminders.ReminderScheduler.rescheduleAll(appContext)
+                if (com.soni.assistant.data.settings.AvailabilitySettings.get(appContext).current.bubble) {
+                    com.soni.assistant.bubble.BubbleService.start(appContext)
+                }
                 if (!SoniPreferences(appContext).isBackgroundListeningEnabled()) return@launch
                 WakeWordNotifications.createChannels(appContext)
                 val micGranted = ContextCompat.checkSelfPermission(appContext, Manifest.permission.RECORD_AUDIO) ==

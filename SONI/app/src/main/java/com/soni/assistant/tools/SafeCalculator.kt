@@ -1,18 +1,32 @@
 package com.soni.assistant.tools
 
 import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.log
+import kotlin.math.log10
 import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
+import kotlin.math.tan
 
 class CalculationException(message: String) : Exception(message)
 
+internal sealed class CalcToken {
+    data class Number(val value: Double) : CalcToken()
+    data class Operator(val symbol: Char) : CalcToken()
+    data class Function(val name: String) : CalcToken()
+    data object OpenParen : CalcToken()
+    data object CloseParen : CalcToken()
+}
+
 /**
- * Evaluador aritmético propio (descenso recursivo). No usa eval ni motores de scripts.
- * Admite: números decimales, + - * / ^, paréntesis y signo negativo.
- * Precedencia: paréntesis > potencia (asociativa por la derecha) > signo > * / > + -.
+ * Evaluador aritmético y científico propio (descenso recursivo). No usa eval ni motores de scripts.
+ * Admite: números decimales, + - * / ^ !, funciones (sqrt, sin, cos, tan, log, ln, abs, fact),
+ * constantes (pi, e), paréntesis y signo negativo.
  */
 class SafeCalculator(
-    private val maxLength: Int = 200,
-    private val maxTokens: Int = 120,
+    private val maxLength: Int = 300,
+    private val maxTokens: Int = 150,
     private val maxDepth: Int = 40,
     private val maxExponent: Double = 1_000.0,
 ) {
@@ -30,18 +44,11 @@ class SafeCalculator(
         if (value.isNaN() || value.isInfinite()) {
             throw CalculationException("El resultado es demasiado grande o no está definido.")
         }
-        return if (value == 0.0) 0.0 else value // Evita mostrar «-0».
+        return if (value == 0.0) 0.0 else value
     }
 
-    private sealed interface Token {
-        data class Number(val value: Double) : Token
-        data class Operator(val symbol: Char) : Token
-        data object OpenParen : Token
-        data object CloseParen : Token
-    }
-
-    private fun tokenize(input: String): List<Token> {
-        val tokens = mutableListOf<Token>()
+    private fun tokenize(input: String): List<CalcToken> {
+        val tokens = mutableListOf<CalcToken>()
         var i = 0
         while (i < input.length) {
             val ch = input[i]
@@ -56,18 +63,29 @@ class SafeCalculator(
                     }
                     val number = literal.toDoubleOrNull()
                         ?: throw CalculationException("El número «$literal» no es válido.")
-                    tokens += Token.Number(number)
+                    tokens += CalcToken.Number(number)
                 }
-                ch in "+-*/^" -> {
-                    tokens += Token.Operator(ch)
+                ch.isLetter() -> {
+                    val start = i
+                    while (i < input.length && input[i].isLetter()) i++
+                    val word = input.substring(start, i).lowercase()
+                    when (word) {
+                        "pi" -> tokens += CalcToken.Number(Math.PI)
+                        "e" -> tokens += CalcToken.Number(Math.E)
+                        "sqrt", "sin", "cos", "tan", "log", "ln", "abs", "fact" -> tokens += CalcToken.Function(word)
+                        else -> throw CalculationException("La función o constante «$word» no es conocida.")
+                    }
+                }
+                ch in "+-*/^!" -> {
+                    tokens += CalcToken.Operator(ch)
                     i++
                 }
                 ch == '(' -> {
-                    tokens += Token.OpenParen
+                    tokens += CalcToken.OpenParen
                     i++
                 }
                 ch == ')' -> {
-                    tokens += Token.CloseParen
+                    tokens += CalcToken.CloseParen
                     i++
                 }
                 else -> throw CalculationException("El símbolo «$ch» no está permitido.")
@@ -77,16 +95,16 @@ class SafeCalculator(
         return tokens
     }
 
-    private inner class Parser(private val tokens: List<Token>) {
+    private inner class Parser(private val tokens: List<CalcToken>) {
         private var position = 0
 
         fun isAtEnd(): Boolean = position >= tokens.size
 
-        private fun peek(): Token? = tokens.getOrNull(position)
+        private fun peek(): CalcToken? = tokens.getOrNull(position)
 
         private fun matchOperator(vararg symbols: Char): Char? {
             val token = peek()
-            if (token is Token.Operator && token.symbol in symbols) {
+            if (token is CalcToken.Operator && token.symbol in symbols) {
                 position++
                 return token.symbol
             }
@@ -128,8 +146,16 @@ class SafeCalculator(
             return when (matchOperator('-', '+')) {
                 '-' -> -parseUnary(depth + 1)
                 '+' -> parseUnary(depth + 1)
-                else -> parsePower(depth)
+                else -> parsePostfix(depth)
             }
+        }
+
+        private fun parsePostfix(depth: Int): Double {
+            var value = parsePower(depth)
+            while (matchOperator('!') != null) {
+                value = factorial(value)
+            }
+            return value
         }
 
         private fun parsePower(depth: Int): Double {
@@ -144,20 +170,83 @@ class SafeCalculator(
 
         private fun parsePrimary(depth: Int): Double {
             return when (val token = peek()) {
-                is Token.Number -> {
+                is CalcToken.Number -> {
                     position++
                     token.value
                 }
-                Token.OpenParen -> {
+                is CalcToken.Function -> {
+                    position++
+                    parseFunctionCall(token.name, depth)
+                }
+                CalcToken.OpenParen -> {
                     position++
                     val value = parseExpression(depth + 1)
-                    if (peek() != Token.CloseParen) throw CalculationException("Falta cerrar un paréntesis.")
+                    if (peek() != CalcToken.CloseParen) throw CalculationException("Falta cerrar un paréntesis.")
                     position++
                     value
                 }
                 null -> throw CalculationException("La operación está incompleta.")
                 else -> throw CalculationException("La operación no está bien formada.")
             }
+        }
+
+        private fun parseFunctionCall(name: String, depth: Int): Double {
+            val hasParen = peek() == CalcToken.OpenParen
+            if (hasParen) position++
+            val arg = parseExpression(depth + 1)
+            if (hasParen) {
+                if (peek() != CalcToken.CloseParen) throw CalculationException("Falta cerrar el paréntesis de la función «$name».")
+                position++
+            }
+            return evaluateFunction(name, arg)
+        }
+
+        private fun evaluateFunction(name: String, arg: Double): Double {
+            return when (name) {
+                "sqrt" -> {
+                    if (arg < 0.0) throw CalculationException("No se puede calcular la raíz de un número negativo.")
+                    sqrt(arg)
+                }
+                "sin" -> {
+                    val rad = Math.toRadians(arg)
+                    val res = sin(rad)
+                    if (abs(res) < 1e-15) 0.0 else res
+                }
+                "cos" -> {
+                    val rad = Math.toRadians(arg)
+                    val res = cos(rad)
+                    if (abs(res) < 1e-15) 0.0 else res
+                }
+                "tan" -> {
+                    val mod = (abs(arg) % 180.0)
+                    if (abs(mod - 90.0) < 1e-9) throw CalculationException("La tangente no está definida para ese ángulo.")
+                    val rad = Math.toRadians(arg)
+                    tan(rad)
+                }
+                "log" -> {
+                    if (arg <= 0.0) throw CalculationException("El logaritmo solo está definido para números positivos.")
+                    log10(arg)
+                }
+                "ln" -> {
+                    if (arg <= 0.0) throw CalculationException("El logaritmo natural solo está definido para números positivos.")
+                    log(arg, Math.E)
+                }
+                "abs" -> abs(arg)
+                "fact" -> factorial(arg)
+                else -> throw CalculationException("Función desconocida «$name».")
+            }
+        }
+
+        private fun factorial(n: Double): Double {
+            if (n < 0 || n != Math.floor(n) || n > 20) {
+                throw CalculationException("El factorial solo se define para números enteros entre 0 y 20.")
+            }
+            var res = 1.0
+            val intN = n.toInt()
+            for (i in 2..intN) {
+                res *= i
+            }
+            return res
         }
     }
 }

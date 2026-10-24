@@ -5,15 +5,14 @@ namespace GuajiraBags\Services;
 /**
  * Optimización de imágenes con GD (viene en casi todos los hostings).
  *
- * - optimizeUpload(): al subir una foto la endereza (EXIF), la limita a 2000 px y la guarda en WebP
- *   (o JPEG si el servidor no tiene WebP). Una foto de celular de 4 MB queda en ~200 KB.
+ * - optimizeUpload(): la foto subida se guarda intacta (máxima calidad); solo las enormes se reducen a 3000 px.
  * - thumbnail(): genera versiones pequeñas bajo demanda (/img/400/uploads/...) y las guarda en caché
  *   en public/img/. La siguiente visita la sirve Apache directamente, sin pasar por PHP.
  */
 class ImageService
 {
     public const WIDTHS = [160, 320, 480, 640, 960, 1280];
-    private const MAX_SIDE = 2000;
+    private const MAX_SIDE = 3000;
 
     public function __construct(private string $publicDir) {}
 
@@ -27,19 +26,32 @@ class ImageService
         return function_exists('imagewebp') && (gd_info()['WebP Support'] ?? false);
     }
 
-    /** Reescribe la foto subida optimizada. Devuelve la extensión final o null si no pudo. */
+    /**
+     * Foto recién subida: se guarda TAL CUAL (sin volver a comprimir) para no perder calidad.
+     * Solo si es enorme (más de 3000 px o más de 8 MB) se reduce a 3000 px con calidad 92.
+     * Devuelve la nueva extensión si la reescribió, o null si la dejó intacta.
+     */
     public function optimizeUpload(string $path): ?string
     {
+        $info = @getimagesize($path);
+        if (!$info) {
+            return null;
+        }
+        [$w, $h] = $info;
+        if (max($w, $h) <= self::MAX_SIDE && filesize($path) <= 8 * 1024 * 1024) {
+            return null; // original intacto: máxima calidad
+        }
         if (!self::available()) {
             return null;
         }
+        @ini_set('memory_limit', '384M');
         $img = $this->load($path);
         if (!$img) {
             return null;
         }
         $img = $this->fit($img, self::MAX_SIDE);
         $ext = self::webp() ? 'webp' : 'jpg';
-        $ok = $this->save($img, $path . '.tmp', $ext, 88);
+        $ok = $this->save($img, $path . '.tmp', $ext, 92);
         imagedestroy($img);
         if (!$ok) {
             @unlink($path . '.tmp');
@@ -79,10 +91,11 @@ class ImageService
             return [$source, mime_content_type($source) ?: 'image/jpeg'];
         }
         $img = $this->fit($img, $width, true);
+        $this->sharpen($img);
         if (!is_dir(dirname($cache))) {
             @mkdir(dirname($cache), 0755, true);
         }
-        $ok = $this->save($img, $cache . '.tmp', $ext, $width <= 480 ? 84 : 86);
+        $ok = $this->save($img, $cache . '.tmp', $ext, 90);
         imagedestroy($img);
         if ($ok && @rename($cache . '.tmp', $cache)) {
             return [$cache, $type];
@@ -155,6 +168,14 @@ class ImageService
         imagecopyresampled($out, $img, 0, 0, 0, 0, $nw, $nh, $w, $h);
         imagedestroy($img);
         return $out;
+    }
+
+    /** Enfoque suave después de reducir (las fotos reducidas suelen verse un poco "blandas"). */
+    private function sharpen(\GdImage $img): void
+    {
+        if (function_exists('imageconvolution')) {
+            @imageconvolution($img, [[-1, -1, -1], [-1, 20, -1], [-1, -1, -1]], 12, 0);
+        }
     }
 
     private function save(\GdImage $img, string $path, string $ext, int $q): bool

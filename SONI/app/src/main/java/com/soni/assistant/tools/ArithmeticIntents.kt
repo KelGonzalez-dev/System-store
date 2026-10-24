@@ -11,24 +11,23 @@ import com.soni.assistant.core.IntentRule
 object ArithmeticIntents {
 
     val rules: List<IntentRule> = listOf(
-        // «cuánto es 2 más 3», «calcula 2 elevado a 10».
+        // «cuánto es 2 más 3», «calcula 2 elevado a 10», «cuánto es la raíz cuadrada de 2025».
         IntentRule(IntentPriority.EXPLICIT_COMMAND) { text ->
             CALC_PREFIX.matchEntire(text)?.let { match ->
                 buildExpression(match.groupValues[1])?.let { Action.Calculate(it) }
             }
         },
-        // Una operación dicha sin prefijo: «15 por 4», «2 + 2».
+        // Una operación dicha sin prefijo: «15 por 4», «2 + 2», «raíz cuadrada de 2025», «seno de 30».
         IntentRule(IntentPriority.FALLBACK) { text ->
             buildExpression(text)
-                ?.takeIf { BINARY_OPERATOR.containsMatchIn(it) }
+                ?.takeIf { BINARY_OPERATOR.containsMatchIn(it) || FUNCTION_OPERATOR.containsMatchIn(it) }
                 ?.let { Action.Calculate(it) }
         },
     )
 
     /**
-     * Convierte una operación en lenguaje natural a una expresión con símbolos
-     * (+ - * / ^ y paréntesis). Devuelve null si queda algo que no sea matemático.
-     * El resultado NUNCA se ejecuta como código: lo evalúa [SafeCalculator].
+     * Convierte una operación en lenguaje natural a una expresión con símbolos y funciones
+     * (+ - * / ^ ! sqrt sin cos tan log ln abs fact pi e y paréntesis).
      */
     internal fun buildExpression(fragment: String): String? {
         var e = " ${fragment.trim()} "
@@ -38,15 +37,33 @@ object ArithmeticIntents {
         for ((word, digits) in NUMBER_WORDS) {
             e = e.replace(Regex("\\b$word\\b"), digits)
         }
+        for ((phrase, replacement) in FUNCTION_WORDS) {
+            e = e.replace(Regex("\\b${Regex.escape(phrase)}\\b"), " $replacement ")
+        }
         for ((words, symbol) in OPERATOR_WORDS) {
             e = e.replace(Regex("\\b${Regex.escape(words)}\\b"), " $symbol ")
         }
         e = e.replace(TIMES_SIGN, "*").replace('÷', '/')
         e = e.replace(THOUSANDS) { it.value.replace(".", "") }
         e = e.replace(',', '.')
+
+        // Cierra paréntesis abiertos automáticamente si no coinciden
+        val openCount = e.count { it == '(' }
+        val closeCount = e.count { it == ')' }
+        if (openCount > closeCount) {
+            e += ")".repeat(openCount - closeCount)
+        }
+
         e = e.replace(WHITESPACE, " ").trim()
 
-        if (e.isEmpty() || !ALLOWED_EXPRESSION.matches(e) || e.none { it in '0'..'9' }) return null
+        if (e.isEmpty() || !ALLOWED_EXPRESSION.matches(e)) return null
+
+        // Verifica que no haya palabras que no correspondan a funciones ni constantes conocidas
+        val words = e.split(Regex("[^a-z]+")).filter { it.isNotEmpty() }
+        if (words.any { it !in ALLOWED_WORDS }) return null
+
+        if (e.none { it in '0'..'9' } && words.isEmpty()) return null
+
         return e
     }
 
@@ -61,8 +78,10 @@ object ArithmeticIntents {
     private val PERCENT = Regex("(\\d+(?:[.,]\\d+)?)\\s*(?:por ciento|porciento|%)")
     private val TIMES_SIGN = Regex("(?<=[\\d)])\\s*[x×·]\\s*(?=[\\d(])")
     private val THOUSANDS = Regex("(?<![\\d.,])[1-9]\\d{0,2}(?:\\.\\d{3})+(?![\\d.])")
-    private val ALLOWED_EXPRESSION = Regex("^[0-9.+\\-*/^()\\s]+$")
+    private val ALLOWED_EXPRESSION = Regex("^[a-z0-9.+\\-*/^()!\\s]+$")
     private val BINARY_OPERATOR = Regex("[0-9)]\\s*[+\\-*/^]")
+    private val FUNCTION_OPERATOR = Regex("(?:sqrt|sin|cos|tan|log|ln|abs|fact|!|pi|e)")
+    private val ALLOWED_WORDS = setOf("sqrt", "sin", "cos", "tan", "log", "ln", "abs", "fact", "pi", "e")
 
     private val NUMBER_WORDS = listOf(
         "cero" to "0", "uno" to "1", "dos" to "2", "tres" to "3", "cuatro" to "4",
@@ -70,7 +89,21 @@ object ArithmeticIntents {
         "diez" to "10", "once" to "11", "doce" to "12",
     )
 
-    // El orden importa: las frases largas van antes que las palabras sueltas.
+    private val FUNCTION_WORDS = listOf(
+        "raiz cuadrada de" to "sqrt(",
+        "raiz cuadrada" to "sqrt(",
+        "raiz de" to "sqrt(",
+        "seno de" to "sin(",
+        "coseno de" to "cos(",
+        "tangente de" to "tan(",
+        "logaritmo natural de" to "ln(",
+        "logaritmo base 10 de" to "log(",
+        "logaritmo de" to "log(",
+        "valor absoluto de" to "abs(",
+        "factorial de" to "fact(",
+        "factorial" to "!",
+    )
+
     private val OPERATOR_WORDS = listOf(
         "abre parentesis" to "(",
         "cierra parentesis" to ")",
