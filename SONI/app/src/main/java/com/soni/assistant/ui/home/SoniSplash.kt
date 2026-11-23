@@ -39,9 +39,14 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.random.Random
 
+/**
+ * Animación de inicio tipo holograma: cada partícula entra disparada desde un punto lejano,
+ * gira en espiral y se ensambla en la esfera; al cuajar, un pulso de energía y el título SONI.
+ * Dura ~1,8 s y al terminar llama a [onFinished].
+ */
 @Composable
 fun SoniSplash(onFinished: () -> Unit) {
-    val particles = remember { buildAssembly(620) }
+    val particles = remember { buildAssembly(340) }
     var time by remember { mutableFloatStateOf(0f) }
     var done by remember { mutableStateOf(false) }
 
@@ -56,11 +61,11 @@ fun SoniSplash(onFinished: () -> Unit) {
         onFinished()
     }
 
-    // 0 → disperso, 1 → ensamblado (en los primeros 1,4 s), con un pequeño rebote al final.
-    val assemble = (time / 1.4f).coerceIn(0f, 1f).let { t -> 1f - (1f - t) * (1f - t) * (1f - t) }
+    // 0 → disperso, 1 → ensamblado (en los primeros 0,8 s), con un pequeño rebote al final.
+    val assemble = (time / 0.8f).coerceIn(0f, 1f).let { t -> 1f - (1f - t) * (1f - t) * (1f - t) }
     // Mensaje de carga que va cambiando.
-    val message = LOADING_MESSAGES[((time / 0.9f).toInt()).coerceIn(0, LOADING_MESSAGES.lastIndex)]
-    val titleAlpha by animateFloatAsState(if (time > 1.2f) 1f else 0f, tween(500, easing = LinearEasing), label = "title")
+    val message = LOADING_MESSAGES[((time / 0.4f).toInt()).coerceIn(0, LOADING_MESSAGES.lastIndex)]
+    val titleAlpha by animateFloatAsState(if (time > 0.55f) 1f else 0f, tween(300, easing = LinearEasing), label = "title")
     // Al final se desvanece todo suavemente.
     val fadeOut = ((TOTAL_SECONDS - time) / 0.5f).coerceIn(0f, 1f)
 
@@ -185,8 +190,8 @@ private fun LoadingDots(time: Float) {
 /** Interpolación lineal entre dos números (la de Compose es solo para colores). */
 private fun mix(a: Float, b: Float, t: Float): Float = a + (b - a) * t
 
-private const val TOTAL_SECONDS = 3.8f
-private const val TOTAL_NANOS = 3_800_000_000L
+private const val TOTAL_SECONDS = 1.6f
+private const val TOTAL_NANOS = 1_600_000_000L
 
 private val LOADING_MESSAGES = listOf(
     "Iniciando SONI",

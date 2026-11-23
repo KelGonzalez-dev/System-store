@@ -26,6 +26,16 @@ object SpotifySearch {
 
     data class Track(val uri: String, val title: String, val artist: String)
 
+    // Memoria de lo último que se puso, para resolver «otra del mismo artista».
+    @Volatile private var lastArtist: String? = null
+    @Volatile private var lastTitle: String? = null
+
+    /** Lo llama MediaControlTool cuando una pista se reproduce de verdad. */
+    fun rememberPlayed(track: Track) {
+        lastArtist = track.artist
+        lastTitle = track.title
+    }
+
     /** El URI de la mejor pista que coincide con [query], o null. */
     suspend fun firstTrackUri(context: Context, query: String): String? =
         bestTrack(context, query)?.uri
@@ -37,30 +47,87 @@ object SpotifySearch {
             return@withContext null
         }
 
+        // «otra canción del mismo artista» / «otra tuya»: usamos el artista recordado.
+        if (wantsSameArtist(query)) {
+            val artist = lastArtist ?: run {
+                Log.i(TAG, "pidió «mismo artista» pero no hay memoria")
+                return@withContext null
+            }
+            return@withContext anotherFromArtist(token, artist, excludeTitle = lastTitle)
+        }
+
         val parts = splitSongAndArtist(query)
 
         if (parts != null) {
             val (song, artist) = parts
 
-            // 1) Búsqueda libre «canción artista»: Spotify ya ordena por relevancia y suele
-            //    poner el resultado correcto de primero, aunque el artista se oyera mal
-            //    (p. ej. «jd» en vez de «jeydiar»). Si entre los primeros hay uno cuyo artista
-            //    se parece a lo pedido, ese; si no, el primero de la lista (el más relevante).
+            // 1) Búsqueda libre «canción artista»: si entre los primeros hay uno cuyo artista
+            //    se parece de verdad a lo pedido, ese.
             val libre = search(token, "$song $artist")
             pickByArtist(libre, artist)?.let { return@withContext it }
-            libre.firstOrNull()?.let { return@withContext it }
 
-            // 2) Estructurada estricta, por si la libre no dio nada.
+            // 2) Estructurada estricta por título y artista.
             val estructurada = search(token, "track:$song artist:$artist")
             pickByArtist(estructurada, artist)?.let { return@withContext it }
-            estructurada.firstOrNull()?.let { return@withContext it }
 
-            // 3) Último recurso: la canción sola, la más popular.
+            // 3) Traemos las canciones REALES del artista (artist:"..."). Si existe, elegimos
+            //    SOLO entre las suyas: la de título más parecido a lo pedido, o su más popular.
+            //    Así nunca ponemos a otro artista equivocado cuando el artista sí existe.
+            val delArtista = tracksOfArtist(token, artist)
+            if (delArtista.isNotEmpty()) {
+                // Si piden «otra» del artista, no repetir la que suena ahora.
+                val pide0tra = normalize(song).let { it.startsWith("otra") || it.startsWith("otro") }
+                val candidatas = if (pide0tra)
+                    delArtista.filter { normalize(it.title) != normalize(lastTitle ?: "") }.ifEmpty { delArtista }
+                else delArtista
+                val porTitulo = candidatas.maxByOrNull { similarity(normalize(song), normalize(it.title)) }
+                val best = porTitulo?.takeIf { similarity(normalize(song), normalize(it.title)) >= 0.45 }
+                    ?: candidatas.first()
+                Log.i(TAG, "elegida del artista «$artist»: ${best.title}/${best.artist}")
+                return@withContext best
+            }
+
+            // 4) El artista no existe tal cual (seguramente mal transcrito, p. ej. «jd»→jeydiar):
+            //    confiamos en el orden libre de Spotify, que suele acertar pese al error.
+            libre.firstOrNull()?.let {
+                Log.i(TAG, "artista no hallado; confío en libre: ${it.title}/${it.artist}")
+                return@withContext it
+            }
+
+            // 5) Último recurso: la canción sola, la más popular.
             return@withContext pickByPopularity(search(token, song))
         }
 
         // Sin «de artista»: búsqueda libre y la más popular.
         pickByPopularity(search(token, query))
+    }
+
+    /** ¿El usuario pidió otra canción del mismo artista que suena ahora? */
+    private fun wantsSameArtist(query: String): Boolean {
+        val q = normalize(query)
+        return q.contains("mismo artista") || q.contains("mismo cantante") ||
+            q.contains("mismo grupo") || q.contains("otra tuya") ||
+            q.contains("otra cancion tuya") || q.contains("del mismo") ||
+            q.contains("otra de el") || q.contains("otra de ella") ||
+            q.contains("otra del mismo")
+    }
+
+    /** Otra canción del artista [artist], distinta de [excludeTitle], con algo de variedad. */
+    private fun anotherFromArtist(token: String, artist: String, excludeTitle: String?): Track? {
+        val pool = tracksOfArtist(token, artist)
+        if (pool.isEmpty()) {
+            Log.i(TAG, "no hallé canciones de «$artist» para «otra del mismo»")
+            return null
+        }
+        val fresh = pool.filter { normalize(it.title) != normalize(excludeTitle ?: "") }
+        // Entre las primeras (más populares) elegimos una al azar para que «otra» varíe.
+        return (fresh.ifEmpty { pool }).take(8).randomOrNull() ?: pool.first()
+    }
+
+    /** Canciones reales del artista, confirmando que el artista casa de verdad (>= 0.6). */
+    private fun tracksOfArtist(token: String, artist: String): List<Track> {
+        val pool = search(token, "artist:\"$artist\"").ifEmpty { search(token, artist) }
+        return pool.filter { similarity(normalize(artist), normalize(it.artist)) >= 0.6 }
     }
 
     /** Separa «love de jeydiar» en ("love","jeydiar"). Null si no hay un « de » claro. */

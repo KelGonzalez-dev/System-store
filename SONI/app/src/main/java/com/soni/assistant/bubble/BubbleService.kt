@@ -39,6 +39,10 @@ class BubbleService : Service() {
 
     private var menuOpen = false
 
+    // Tamaño de la ventana flotante: pequeña (solo la bolita) cerrada, grande al abrir el menú.
+    private val COLLAPSED get() = dp(80)
+    private val EXPANDED get() = dp(240)
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -54,7 +58,9 @@ class BubbleService : Service() {
         root.addView(orb, FrameLayout.LayoutParams(size, size, Gravity.CENTER))
 
         params = WindowManager.LayoutParams(
-            dp(240), dp(240),
+            // Cerrada, la ventana mide solo lo que la bolita, para no tapar los botones de debajo.
+            // Al abrir el menú se agranda a dp(240) y se vuelve a encoger al cerrarlo.
+            COLLAPSED, COLLAPSED,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
@@ -151,20 +157,37 @@ class BubbleService : Service() {
 
     private fun openMenu() {
         menuOpen = true
+        // Agrandar la ventana para que quepa el menú en arco, manteniendo la bolita en su sitio.
+        val delta = (EXPANDED - COLLAPSED) / 2
+        params.width = EXPANDED
+        params.height = EXPANDED
+        params.x -= delta
+        params.y -= delta
+        windowManager.updateViewLayout(root, params)
         menu.visibility = View.VISIBLE
         menu.animateIn()
     }
 
     private fun closeMenu() {
         menuOpen = false
-        menu.animateOut { menu.visibility = View.GONE }
+        menu.animateOut {
+            menu.visibility = View.GONE
+            // Volver a encoger la ventana para no tapar los botones de debajo.
+            val delta = (EXPANDED - COLLAPSED) / 2
+            params.width = COLLAPSED
+            params.height = COLLAPSED
+            params.x += delta
+            params.y += delta
+            runCatching { windowManager.updateViewLayout(root, params) }
+        }
     }
 
     /** Pega la burbuja al borde más cercano (izquierda o derecha). */
     private fun snapToEdge() {
         val metrics = resources.displayMetrics
-        val center = params.x + dp(120)
-        params.x = if (center < metrics.widthPixels / 2) dp(8) else metrics.widthPixels - dp(248)
+        val half = params.width / 2
+        val center = params.x + half
+        params.x = if (center < metrics.widthPixels / 2) dp(8) else metrics.widthPixels - params.width - dp(8)
         windowManager.updateViewLayout(root, params)
     }
 

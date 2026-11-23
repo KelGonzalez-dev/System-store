@@ -28,7 +28,9 @@ object WakeWordDetector {
      */
     val DISTRACTORS = listOf("sonia", "sonido", "sonó", "son", "sí", "no")
 
-    const val MIN_CONFIDENCE = 0.6
+    // Umbral alto: así el audio de un video o la música no se confunde con «SONI». Una «SONI»
+    // dicha de verdad puntúa muy por encima de esto.
+    const val MIN_CONFIDENCE = 0.82
 
     /** Gramática cerrada en el formato JSON que espera Vosk. */
     val grammarJson: String =
@@ -232,9 +234,10 @@ class WakeWordManager(context: Context) {
         }
 
         private companion object {
-            // Ganancia aplicada al micrófono: 2.5x hace que la voz destaque sobre la música
-            // sin saturar demasiado. Si en pruebas se oye distorsión o falsos positivos, bajar a 2.0.
-            const val GAIN = 2.5f
+            // Ganancia aplicada al micrófono: 2.2x ayuda a que la voz destaque sobre la música
+            // sin amplificar de más el ruido o el audio de videos. Subir a 2.5 si cuesta oírte;
+            // bajar a 1.8 si hay disparos falsos.
+            const val GAIN = 2.2f
         }
 
         private fun parseWords(hypothesis: String?): List<RecognizedWord> {

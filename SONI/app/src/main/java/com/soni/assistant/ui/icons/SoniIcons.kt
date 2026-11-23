@@ -59,6 +59,55 @@ object SoniIcons {
             "M13,17h-2v-6h2v6zM13,9h-2L11,7h2v2z",
     )
 
+    /** Flecha hacia abajo (para desplegables); se rota 180° cuando está abierto. */
+    val ChevronDown: ImageVector = icon("ChevronDown", "M7.41,8.59L12,13.17l4.59,-4.58L18,10l-6,6 -6,-6z")
+
+    /** Deslizadores (menú de opciones). */
+    val Tune: ImageVector = icon(
+        "Tune",
+        "M3,17v2h6v-2L3,17zM3,5v2h10L13,5L3,5zM13,21v-2h8v-2h-8v-2h-2v6h2zM7,9v2L3,11v2h4v2h2L9,9L7,9z" +
+            "M21,13v-2L11,11v2h10zM15,7h6L21,5h-6v2z",
+    )
+
+    /** Persona (perfil «Sobre ti»). */
+    val Person: ImageVector = icon(
+        "Person",
+        "M12,12c2.21,0 4,-1.79 4,-4s-1.79,-4 -4,-4 -4,1.79 -4,4 1.79,4 4,4z" +
+            "M12,14c-2.67,0 -8,1.34 -8,4v2h16v-2c0,-2.66 -5.33,-4 -8,-4z",
+    )
+
+    /** Memoria (cerebro estilizado como nodos). */
+    val Memory: ImageVector = icon(
+        "Memory",
+        "M15,9L15,7h2L17,9h2v2h-2v2h2v2h-2v2h-2v-2h-2v2h-2v-2L9,13L9,11L7,11L7,9h2L9,7h2v2h2L13,7h2v2z" +
+            "M11,11v2h2v-2h-2z",
+    )
+
+    /** Campana (notificaciones). */
+    val Bell: ImageVector = icon(
+        "Bell",
+        "M12,22c1.1,0 2,-0.9 2,-2h-4c0,1.1 0.9,2 2,2z" +
+            "M18,16v-5c0,-3.07 -1.63,-5.64 -4.5,-6.32L13.5,4c0,-0.83 -0.67,-1.5 -1.5,-1.5s-1.5,0.67 -1.5,1.5v0.68" +
+            "C7.63,5.36 6,7.92 6,11v5l-2,2v1h16v-1l-2,-2z",
+    )
+
+    /** Candado (permisos). */
+    val Lock: ImageVector = icon(
+        "Lock",
+        "M18,8h-1L17,6c0,-2.76 -2.24,-5 -5,-5S7,3.24 7,6v2L6,8c-1.1,0 -2,0.9 -2,2v10c0,1.1 0.9,2 2,2h12c1.1,0 2,-0.9 2,-2L20,10c0,-1.1 -0.9,-2 -2,-2z" +
+            "M12,17c-1.1,0 -2,-0.9 -2,-2s0.9,-2 2,-2 2,0.9 2,2 -0.9,2 -2,2z" +
+            "M9,8L9,6c0,-1.66 1.34,-3 3,-3s3,1.34 3,3v2L9,8z",
+    )
+
+    /** Rayo (actividad). */
+    val Bolt: ImageVector = icon("Bolt", "M7,2v11h3v9l7,-12h-4l4,-8z")
+
+    /** Círculo (burbuja flotante). */
+    val Bubble: ImageVector = icon(
+        "Bubble",
+        "M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2z",
+    )
+
     private fun icon(name: String, path: String, autoMirror: Boolean = false): ImageVector =
         ImageVector.Builder(
             name = name,
