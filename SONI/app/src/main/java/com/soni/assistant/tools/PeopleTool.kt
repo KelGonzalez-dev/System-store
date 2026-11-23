@@ -67,7 +67,7 @@ class PeopleTool(private val context: Context) : SoniTool, ConversationStarter {
 
     companion object {
         private val MEET = Regex(
-            "^(?:conoce a|conoce|quiero que conozcas a|te presento a|te quiero presentar a|presentate con|saluda a|ven a conocer a)\\s*(.*)$"
+            "^(?:conoce a|conoce|quiero que conozcas a|te presento a|te quiero presentar a|ven a conocer a)\\s*(.*)$"
         )
         private val ABOUT = Regex("^(?:que sabes de|quien es|que me puedes decir de|recuerdas a|te acuerdas de|conoces a|cuando cumple|cuantos anos tiene)\\s+(.+)$")
 

@@ -35,10 +35,22 @@ object NotificationSpeaker {
     }
 
     private fun pump(context: Context) {
+        // Si entró el modo silencio, descartar lo que quede por leer.
+        if (com.soni.assistant.voice.SoniRuntimeState.isSilenced) {
+            queue.clear()
+            runCatching { tts?.stop() }
+            speaking = false
+            return
+        }
         if (speaking || queue.isEmpty()) return
-        // No interrumpir una orden en curso ni una llamada; reintentar en bloque luego.
+        // No pisar al propio SONI mientras habla o atiende una orden (evita que se crucen las
+        // dos voces: la del asistente y la de las notificaciones). Se reintenta luego.
         val state = WakeWordController.state.value
-        if (state == WakeWordState.ListeningCommand || state == WakeWordState.Processing) {
+        val assistantBusy = WakeWordController.speaking.value ||
+            state == WakeWordState.ListeningCommand ||
+            state == WakeWordState.Processing ||
+            state is WakeWordState.Responded
+        if (assistantBusy) {
             main.postDelayed({ pump(context) }, 1_500)
             return
         }
@@ -83,4 +95,25 @@ object NotificationSpeaker {
     private var appContext: Context? = null
 
     fun init(context: Context) { appContext = context.applicationContext }
+
+    /** Corta de inmediato la lectura de notificaciones y vacía la cola (p. ej. al decir «SONI»). */
+    fun stopNow() {
+        main.post {
+            queue.clear()
+            runCatching { tts?.stop() }
+            speaking = false
+        }
+    }
+
+    /** Libera el motor de voz. Se llama al destruir el servicio para no dejarlo colgado. */
+    fun shutdown() {
+        main.post {
+            queue.clear()
+            runCatching { tts?.stop() }
+            runCatching { tts?.shutdown() }
+            tts = null
+            ready = false
+            speaking = false
+        }
+    }
 }

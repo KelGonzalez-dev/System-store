@@ -43,7 +43,12 @@ class SoniNotificationListener : NotificationListenerService() {
         val isWhatsApp = sbn.packageName in WHATSAPP_PACKAGES
         if (isWhatsApp) handleWhatsApp(sbn, title, text)
 
-        if (AvailabilitySettings.get(applicationContext).current.readAloud && !sbn.isOngoing) {
+        // En modo silencio / «no molestar» no se lee nada en voz alta.
+        if (com.soni.assistant.voice.SoniRuntimeState.isSilenced) return
+
+        val prefs = AvailabilitySettings.get(applicationContext).current
+        val appBloqueada = sbn.packageName in prefs.blockedNotificationApps
+        if (prefs.readAloud && !sbn.isOngoing && !appBloqueada) {
             readAloud(sbn.packageName, title, text)
         }
     }
@@ -58,8 +63,11 @@ class SoniNotificationListener : NotificationListenerService() {
 
     // ---------------------------------------------------------------- lectura en voz alta
 
-    private fun readAloud(pkg: String, title: String, text: String) {
+    private fun readAloud(pkg: String, rawTitle: String, rawText: String) {
         val app = labelFor(pkg)
+        val title = clean(rawTitle)
+        val text = clean(rawText)
+        if (title.isBlank() && text.isBlank()) return // solo había emojis/símbolos
         val spoken = when {
             pkg in WHATSAPP_PACKAGES && title.isNotBlank() -> "$title te escribió por WhatsApp: $text"
             app != null && title.isNotBlank() -> "$app, $title: $text"
@@ -68,6 +76,34 @@ class SoniNotificationListener : NotificationListenerService() {
             else -> text
         }
         NotificationSpeaker.announce(applicationContext, spoken)
+    }
+
+    /**
+     * Quita emojis, símbolos e iconos que la voz leería como «corazón rojo», «emoji de…», etc.
+     * Deja letras (con tildes y ñ), números y puntuación normal, y junta espacios sobrantes.
+     */
+    private fun clean(s: String): String {
+        if (s.isBlank()) return ""
+        val sb = StringBuilder(s.length)
+        var i = 0
+        while (i < s.length) {
+            val cp = s.codePointAt(i)
+            val count = Character.charCount(cp)
+            if (isSpeakable(cp)) sb.appendCodePoint(cp)
+            else sb.append(' ') // el símbolo se sustituye por un espacio, no se pega a la palabra
+            i += count
+        }
+        return sb.toString().replace(Regex("\\s+"), " ").trim()
+    }
+
+    /** True si el carácter es algo que tiene sentido leer (letra, número, puntuación común). */
+    private fun isSpeakable(cp: Int): Boolean {
+        if (cp == '\n'.code || cp == '\t'.code) return true
+        if (cp < 0x80) return true // ASCII básico: letras, números, puntuación, espacio
+        // Letras acentuadas y ñ y demás letras de idiomas (categoría Unicode de letra).
+        if (Character.isLetterOrDigit(cp)) return true
+        // Algunos signos de puntuación fuera de ASCII que sí queremos (¿ ¡ « » — … ’).
+        return cp in SPEAKABLE_PUNCT
     }
 
     private fun labelFor(pkg: String): String? = runCatching {
@@ -123,6 +159,12 @@ class SoniNotificationListener : NotificationListenerService() {
 
     companion object {
         val WHATSAPP_PACKAGES = setOf("com.whatsapp", "com.whatsapp.w4b")
+
+        // Signos de puntuación no-ASCII que sí tiene sentido conservar al leer.
+        private val SPEAKABLE_PUNCT = setOf(
+            '¿'.code, '¡'.code, '«'.code, '»'.code, '—'.code, '–'.code, '…'.code, '’'.code,
+            '“'.code, '”'.code, '‘'.code, 'º'.code, 'ª'.code, '€'.code,
+        )
 
         fun component(context: Context) = ComponentName(context, SoniNotificationListener::class.java)
 

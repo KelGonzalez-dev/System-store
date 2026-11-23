@@ -76,7 +76,9 @@ class WakeWordService : Service() {
         // Avisos de batería: solo se hablan si SONI está libre esperando su nombre.
         battery = BatteryAnnouncer(this) { message ->
             val state = WakeWordController.state.value
-            if (state == WakeWordState.Waiting || state == WakeWordState.Paused) {
+            if (SoniRuntimeState.isSilenced) {
+                false // en modo silencio no se avisa de la batería
+            } else if (state == WakeWordState.Waiting || state == WakeWordState.Paused) {
                 speechOutput.speak(message)
                 true
             } else {
@@ -128,6 +130,7 @@ class WakeWordService : Service() {
 
         if (!initialized) {
             initialized = true
+            SoniRuntimeState.wake() // arranque limpio: SONI activo (no silenciado)
             setState(WakeWordState.Loading)
             wakeWord.load(
                 onReady = { listenForWakeWord() },
@@ -184,7 +187,9 @@ class WakeWordService : Service() {
     }
 
     private fun onWakeWordDetected() {
+        SoniRuntimeState.wake() // decir «SONI» saca del modo silencio
         speechOutput.stop()
+        com.soni.assistant.notifications.NotificationSpeaker.stopNow() // corta lectura de notificaciones
         pauseOtherAudio()
         setState(WakeWordState.ListeningCommand)
         commandJob?.cancel()
@@ -230,11 +235,16 @@ class WakeWordService : Service() {
                     commandJob = scope.launch { respond("No te escuché. ¿Me lo repites?", "No te escuché. ¿Me lo repites?") }
                     return
                 }
-                val message = when (event.code) {
-                    SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
-                        "No te entendí. Di «SONI» otra vez y espera el tono."
-                    else -> event.message
+                // Si no se captó nada (silencio, o un disparo falso por el audio de un video/la
+                // música), NO se habla: se vuelve a esperar «SONI» en silencio, sin molestar.
+                if (event.code == SpeechRecognizer.ERROR_NO_MATCH ||
+                    event.code == SpeechRecognizer.ERROR_SPEECH_TIMEOUT
+                ) {
+                    resumeOtherAudio()
+                    listenForWakeWord()
+                    return
                 }
+                val message = event.message
                 commandJob = scope.launch { respond(message, message) }
             }
             SpeechEvent.Ready, is SpeechEvent.Level, is SpeechEvent.Partial -> Unit
@@ -343,6 +353,7 @@ class WakeWordService : Service() {
         wakeWord.release()
         speechInput.destroy()
         speechOutput.shutdown()
+        com.soni.assistant.notifications.NotificationSpeaker.shutdown()
         tone?.release()
         tone = null
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)

@@ -132,22 +132,39 @@ class MediaControlTool(private val context: Context) : SoniTool {
         // 1. Spotify con el SDK oficial: reproduce la canción exacta por debajo.
         if (isInstalled(SPOTIFY) && SpotifyController.isConfigured) {
             if (SpotifyAuth.needsLogin(context)) {
-                SpotifyLoginActivity.start(context)
-                return ActionResult.Success(
-                    message = "Para poner música con Spotify, autoriza a SONI una vez (se abrió la pantalla de Spotify). " +
-                        "Luego vuelve a pedírmelo.",
-                    spokenMessage = "Autorízame en Spotify una vez y vuelve a pedírmelo",
-                    actionLabel = "Conectar Spotify",
-                )
-            }
-            val uri = SpotifySearch.firstTrackUri(context, query)
-            if (uri != null) {
-                when (val result = SpotifyController.playUri(context, uri)) {
-                    SpotifyController.PlayResult.Ok -> return ActionResult.Success(
-                        message = "Reproduciendo «$query» en Spotify.",
-                        spokenMessage = "Poniendo $query",
-                        actionLabel = "Música en Spotify",
+                if (SpotifyAuth.everConnected(context)) {
+                    // Ya autorizó antes: renovamos el token EN SILENCIO y esperamos a tenerlo,
+                    // para seguir con la canción en la misma orden (sin pedir nada al usuario).
+                    SpotifyLoginActivity.refreshSilently(context)
+                    val got = waitForToken(timeoutMs = 6_000)
+                    if (!got) {
+                        return ActionResult.Failed(
+                            "No pude renovar la sesión de Spotify. Revisa tu conexión e inténtalo de nuevo.",
+                            FailureReason.UNEXPECTED,
+                        )
+                    }
+                } else {
+                    // Primera vez: hay que autorizar una vez (muestra la pantalla de Spotify).
+                    SpotifyLoginActivity.start(context)
+                    return ActionResult.Success(
+                        message = "Para poner música con Spotify, autoriza a SONI una vez (se abrió la pantalla de Spotify). " +
+                            "Luego vuelve a pedírmelo.",
+                        spokenMessage = "Autorízame en Spotify una vez y vuelve a pedírmelo",
+                        actionLabel = "Conectar Spotify",
                     )
+                }
+            }
+            val track = SpotifySearch.bestTrack(context, query)
+            if (track != null) {
+                when (val result = SpotifyController.playUri(context, track.uri)) {
+                    SpotifyController.PlayResult.Ok -> {
+                        SpotifySearch.rememberPlayed(track) // para «otra del mismo artista»
+                        return ActionResult.Success(
+                            message = "Reproduciendo «${track.title}» de ${track.artist} en Spotify.",
+                            spokenMessage = "Poniendo ${track.title} de ${track.artist}",
+                            actionLabel = "Música en Spotify",
+                        )
+                    }
                     SpotifyController.PlayResult.NotConnected -> {
                         // La sesión pudo expirar: se pide iniciar de nuevo.
                         SpotifyLoginActivity.start(context)
@@ -159,6 +176,12 @@ class MediaControlTool(private val context: Context) : SoniTool {
                     }
                     else -> { /* cae al método de respaldo de abajo */ }
                 }
+            } else if (SpotifyAuth.everConnected(context)) {
+                // Hay sesión pero no se obtuvo la canción: casi siempre es falta de internet.
+                return ActionResult.Failed(
+                    "No pude buscar en Spotify. Revisa tu conexión a internet e inténtalo de nuevo.",
+                    FailureReason.UNEXPECTED,
+                )
             }
         }
 
@@ -212,6 +235,16 @@ class MediaControlTool(private val context: Context) : SoniTool {
 
     private fun isInstalled(pkg: String): Boolean =
         context.packageManager.getLaunchIntentForPackage(pkg) != null
+
+    /** Espera (sondeando) a que la renovación silenciosa deje un token válido. */
+    private suspend fun waitForToken(timeoutMs: Long): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            if (!SpotifyAuth.needsLogin(context)) return true
+            kotlinx.coroutines.delay(250)
+        }
+        return !SpotifyAuth.needsLogin(context)
+    }
 
     private fun String?.isNull_or_blank(): Boolean = this == null || this.trim().isEmpty()
 

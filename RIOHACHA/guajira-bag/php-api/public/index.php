@@ -151,7 +151,7 @@ foreach ($_FILES as $f) {
 $db = Database::get($config);
 $storageDir = is_dir($baseApi . '/storage') ? $baseApi . '/storage' : sys_get_temp_dir();
 Schema::ensure($db, $storageDir);
-$storage = new FileStorageService($config, $images);
+$storage = new FileStorageService($config, $images, $storageDir . DIRECTORY_SEPARATOR . 'fotos');
 
 $tieneSesion = static function () use ($config): bool {
     $token = JwtHelper::extractBearerToken();
@@ -200,6 +200,9 @@ $routes = [
     ['PUT',    '#^/categorias/orden$#',                   true,  fn() => $categorias()->reordenar()],
     ['PUT',    '#^/categorias/(\d+)$#',                   true,  fn($id) => $categorias()->actualizar((int) $id)],
     ['DELETE', '#^/categorias/(\d+)$#',                   true,  fn($id) => $categorias()->eliminar((int) $id)],
+
+    // Respaldo: descarga un .zip con TODAS las fotos (desde el panel)
+    ['GET',    '#^/respaldo/fotos$#',                     true,  fn() => (new GuajiraBags\Controllers\RespaldoController($storage))->fotos()],
 
     ['GET',    '#^/galeria$#',                            false, fn() => $galeria()->listar()],
     ['POST',   '#^/galeria$#',                            true,  fn() => $galeria()->crear()],

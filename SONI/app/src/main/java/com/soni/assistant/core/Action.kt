@@ -41,6 +41,9 @@ interface Action {
     data class Research(val query: String) : Action
     /** «Apágate»: dejar de escuchar en segundo plano. */
     data object ShutdownSoni : Action
+    data object SilenceSoni : Action
+    /** SONI se presenta ante un público. [target] es a quién saluda (p. ej. «la iglesia»), o null. */
+    data class Introduce(val target: String?) : Action
     /** Recordatorio: [text] a las [atMillis] (hora del teléfono, en milisegundos). */
     data class SetReminder(val text: String, val atMillis: Long) : Action
     data object ListReminders : Action

@@ -216,54 +216,75 @@ fun HomeScreen(viewModel: HomeViewModel) {
             // Cabecera mínima: el nombre y el estado. El menú vive en los nodos que orbitan el núcleo.
             CoreHeader(label = statusLabel(state.status, speaking), color = statusColor(state.status, speaking))
 
-            val nodes = listOf(
-                OrbitNode("Sobre ti", "\uD83D\uDC64", SoniColors.Cyan) { showProfile = true },
-                OrbitNode("Personas", "\uD83D\uDC65", SoniColors.Violet) { showContacts = true },
-                OrbitNode("Voz", "\uD83C\uDF99", SoniColors.Lavender) { showSettings = true },
-                OrbitNode("Memoria", "\uD83E\uDDE0", SoniColors.Cyan) { showMemory = true },
-                OrbitNode("Permisos", "\uD83D\uDD12", SoniColors.Violet) { showSettings = true },
-                OrbitNode("Actividad", "\u26A1", SoniColors.Lavender) { showActionLog = true },
-                OrbitNode(
-                    label = if (availState.bubble) "Burbuja: on" else "Burbuja: off",
-                    icon = "\uD83D\uDFE3",
-                    color = if (availState.bubble) SoniColors.Cyan else SoniColors.TextSecondary,
-                ) {
-                    val turnOn = !availState.bubble
-                    if (turnOn && !android.provider.Settings.canDrawOverlays(context)) {
-                        context.startActivity(
-                            Intent(
-                                android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                Uri.parse("package:${context.packageName}"),
-                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        )
-                    } else {
-                        availability.update { it.copy(bubble = turnOn) }
-                        if (turnOn) com.soni.assistant.bubble.BubbleService.start(context)
-                        else com.soni.assistant.bubble.BubbleService.stop(context)
-                    }
-                },
+            val optionGroups = listOf(
+                OptionGroup(
+                    title = "Tú",
+                    icon = SoniIcons.Person,
+                    color = SoniColors.Cyan,
+                    items = listOf(
+                        OrbitNode("Sobre ti", SoniIcons.Person, SoniColors.Cyan) { showProfile = true },
+                        OrbitNode("Memoria", SoniIcons.Memory, SoniColors.Lavender) { showMemory = true },
+                        OrbitNode("Personas", SoniIcons.People, SoniColors.Violet) { showContacts = true },
+                    ),
+                ),
+                OptionGroup(
+                    title = "Ajustes",
+                    icon = SoniIcons.Settings,
+                    color = SoniColors.Violet,
+                    items = listOf(
+                        OrbitNode("Voz", SoniIcons.Mic, SoniColors.Lavender) { showSettings = true },
+                        OrbitNode("Notificaciones", SoniIcons.Bell, SoniColors.Cyan) { showSettings = true },
+                        OrbitNode("Permisos", SoniIcons.Lock, SoniColors.Violet) { showSettings = true },
+                    ),
+                ),
+                OptionGroup(
+                    title = "Sistema",
+                    icon = SoniIcons.Bolt,
+                    color = SoniColors.Lavender,
+                    items = listOf(
+                        OrbitNode("Actividad", SoniIcons.Bolt, SoniColors.Lavender) { showActionLog = true },
+                        OrbitNode(
+                            label = if (availState.bubble) "Burbuja: activada" else "Burbuja: desactivada",
+                            icon = SoniIcons.Bubble,
+                            color = if (availState.bubble) SoniColors.Cyan else SoniColors.TextSecondary,
+                        ) {
+                            val turnOn = !availState.bubble
+                            if (turnOn && !android.provider.Settings.canDrawOverlays(context)) {
+                                context.startActivity(
+                                    Intent(
+                                        android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                        Uri.parse("package:${context.packageName}"),
+                                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                )
+                            } else {
+                                availability.update { it.copy(bubble = turnOn) }
+                                if (turnOn) com.soni.assistant.bubble.BubbleService.start(context)
+                                else com.soni.assistant.bubble.BubbleService.stop(context)
+                            }
+                        },
+                    ),
+                ),
             )
 
-            // El núcleo con sus nodos orbitando. Se encoge cuando se abre el teclado.
+            // El núcleo, con el menú de opciones debajo. Se encoge cuando se abre el teclado.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(if (imeVisible) 110.dp else 320.dp),
+                    .height(if (imeVisible) 96.dp else 180.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                if (!imeVisible) {
-                    OrbitNodes(
-                        nodes = nodes,
-                        radius = 140.dp,
-                        paused = reduceMotion,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
                 SoniOrb(
                     state = orbState,
                     micLevel = state.micLevel,
                     reduceMotion = reduceMotion,
                     modifier = Modifier.size(orbSize),
+                )
+            }
+
+            if (!imeVisible) {
+                OptionsMenu(
+                    groups = optionGroups,
+                    modifier = Modifier.padding(top = 12.dp),
                 )
             }
 

@@ -16,6 +16,11 @@ class ImageService
 
     public function __construct(private string $publicDir) {}
 
+    public function publicDir(): string
+    {
+        return rtrim($this->publicDir, '/\\');
+    }
+
     public static function available(): bool
     {
         return extension_loaded('gd') && function_exists('imagecreatefromstring');

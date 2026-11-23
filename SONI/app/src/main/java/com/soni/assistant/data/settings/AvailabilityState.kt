@@ -17,6 +17,8 @@ data class NotificationPrefs(
     val awayMessage: String = "Hola, soy SONI, el asistente de {nombre}. En este momento no puede responder mensajes, pero apenas pueda te contesta.",
     /** Burbuja flotante de partículas sobre otras apps. */
     val bubble: Boolean = false,
+    /** Paquetes de apps cuyas notificaciones NO se leen (el resto sí, si readAloud está activo). */
+    val blockedNotificationApps: Set<String> = emptySet(),
 )
 
 class AvailabilitySettings private constructor(context: Context) {
@@ -34,6 +36,7 @@ class AvailabilitySettings private constructor(context: Context) {
             .putInt(THRESHOLD, next.awayThreshold)
             .putString(MESSAGE, next.awayMessage)
             .putBoolean(BUBBLE, next.bubble)
+            .putStringSet(BLOCKED_APPS, next.blockedNotificationApps)
             .apply()
         _state.value = next
     }
@@ -44,6 +47,7 @@ class AvailabilitySettings private constructor(context: Context) {
         awayThreshold = prefs.getInt(THRESHOLD, 3),
         awayMessage = prefs.getString(MESSAGE, null) ?: NotificationPrefs().awayMessage,
         bubble = prefs.getBoolean(BUBBLE, false),
+        blockedNotificationApps = prefs.getStringSet(BLOCKED_APPS, emptySet())?.toSet() ?: emptySet(),
     )
 
     companion object {
@@ -52,6 +56,7 @@ class AvailabilitySettings private constructor(context: Context) {
         private const val THRESHOLD = "away_threshold"
         private const val MESSAGE = "away_message"
         private const val BUBBLE = "bubble"
+        private const val BLOCKED_APPS = "blocked_notification_apps"
 
         @Volatile
         private var instance: AvailabilitySettings? = null

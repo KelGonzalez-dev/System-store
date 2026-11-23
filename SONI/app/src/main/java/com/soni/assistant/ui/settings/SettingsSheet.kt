@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -52,7 +53,9 @@ import com.soni.assistant.documents.DocumentFinder
 import com.soni.assistant.notifications.SoniNotificationListener
 import com.soni.assistant.ui.theme.SoniColors
 import com.soni.assistant.voice.SpeechOutput
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 /** Ajustes de SONI: tu nombre, su voz y los permisos especiales que se activan en Ajustes de Android. */
@@ -94,6 +97,7 @@ fun SettingsSheet(onDismiss: () -> Unit) {
     var notifications by remember { mutableStateOf(false) }
     var overlay by remember { mutableStateOf(false) }
     var files by remember { mutableStateOf(false) }
+    var showAppPicker by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         while (true) {
             autoSend = SoniAccessibilityService.isEnabled(context)
@@ -185,6 +189,17 @@ fun SettingsSheet(onDismiss: () -> Unit) {
                     else availability.update { it.copy(readAloud = on) }
                 },
             )
+            if (avail.readAloud) {
+                val bloqueadas = avail.blockedNotificationApps.size
+                androidx.compose.material3.TextButton(onClick = { showAppPicker = true }) {
+                    Text(
+                        if (bloqueadas == 0) "Elegir qué apps leer"
+                        else "Elegir qué apps leer ($bloqueadas silenciadas)",
+                        color = SoniColors.Cyan,
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+            }
             SwitchRow(
                 title = "Burbuja flotante",
                 detail = "Una bolita de partículas sobre las demás apps, con accesos rápidos.",
@@ -264,6 +279,102 @@ fun SettingsSheet(onDismiss: () -> Unit) {
             )
         }
     }
+
+    if (showAppPicker) {
+        NotificationAppsDialog(
+            blocked = avail.blockedNotificationApps,
+            onToggle = { pkg, read ->
+                availability.update { s ->
+                    val next = s.blockedNotificationApps.toMutableSet()
+                    if (read) next.remove(pkg) else next.add(pkg)
+                    s.copy(blockedNotificationApps = next)
+                }
+            },
+            onDismiss = { showAppPicker = false },
+        )
+    }
+}
+
+/** Datos mínimos de una app instalada para el selector. */
+private data class AppItem(val pkg: String, val label: String)
+
+@Composable
+private fun NotificationAppsDialog(
+    blocked: Set<String>,
+    onToggle: (String, Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    var apps by remember { mutableStateOf<List<AppItem>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        apps = withContext(Dispatchers.IO) { loadLaunchableApps(context) }
+        loading = false
+    }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = SoniColors.Card,
+        title = { Text("Leer notificaciones de…") },
+        text = {
+            if (loading) {
+                Text("Cargando apps…", color = SoniColors.TextSecondary)
+            } else {
+                Column(
+                    Modifier
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        "Activa las apps cuyas notificaciones quieres que SONI te lea.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SoniColors.TextSecondary,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                    apps.forEach { app ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                app.label,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = SoniColors.TextPrimary,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Switch(
+                                checked = app.pkg !in blocked,
+                                onCheckedChange = { read -> onToggle(app.pkg, read) },
+                                colors = SwitchDefaults.colors(checkedTrackColor = SoniColors.Violet),
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Listo") }
+        },
+    )
+}
+
+/** Lista de apps que el usuario puede abrir (con icono en el lanzador), ordenadas por nombre. */
+private fun loadLaunchableApps(context: android.content.Context): List<AppItem> {
+    val pm = context.packageManager
+    val intent = Intent(Intent.ACTION_MAIN, null).addCategory(Intent.CATEGORY_LAUNCHER)
+    return runCatching {
+        pm.queryIntentActivities(intent, 0)
+            .mapNotNull { info ->
+                val pkg = info.activityInfo?.packageName ?: return@mapNotNull null
+                if (pkg == context.packageName) return@mapNotNull null
+                AppItem(pkg, info.loadLabel(pm).toString())
+            }
+            .distinctBy { it.pkg }
+            .sortedBy { it.label.lowercase(Locale.getDefault()) }
+    }.getOrDefault(emptyList())
 }
 
 @Composable
@@ -375,6 +486,14 @@ private fun SpotifyRow(context: android.content.Context) {
                 style = MaterialTheme.typography.bodySmall,
                 color = SoniColors.TextSecondary,
             )
+            val err = com.soni.assistant.spotify.SpotifyAuth.lastError
+            if (!loggedIn && err.isNotBlank()) {
+                Text(
+                    "Último error: $err",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SoniColors.Error,
+                )
+            }
         }
         TextButton(onClick = {
             if (loggedIn) com.soni.assistant.spotify.SpotifyAuth.logout(context)
